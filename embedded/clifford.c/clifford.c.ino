@@ -1,4 +1,5 @@
 #include <dht11.h>
+#include <string.h>
 
 #define DHT11_PIN 6
 #define A3 3
@@ -11,15 +12,14 @@ void setup() {
 }
 
 void loop() {
-  int val = analogRead(A3);
+  int light = analogRead(A3);
 
   
   int chk = DHT.read(DHT11_PIN);
-  Serial.print("Temp. => ");
-  Serial.println(DHT.temperature,1);
-  Serial.print("Hum. => ");
-  Serial.println(DHT.humidity,1);
-  Serial.print("Light => ");
-  Serial.println(val,DEC);
+  String temp = String(DHT.temperature);
+  String hum = String(DHT.humidity);
+  char buffer[512];
+  sprintf(buffer,"{\"t\":%s,\"h\":%s,\"l\":%i}",temp.c_str(),hum.c_str(),light);
+  Serial.println(buffer);
   delay(5000);
 }
