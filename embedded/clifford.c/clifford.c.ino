@@ -19,7 +19,7 @@ void loop() {
   String temp = String(DHT.temperature);
   String hum = String(DHT.humidity);
   char buffer[512];
-  sprintf(buffer,"{\"t\":%s,\"h\":%s,\"l\":%i}",temp.c_str(),hum.c_str(),light);
+  sprintf(buffer,"{\"t\":\"%s\",\"h\":\"%s\",\"l\":%i}",temp.c_str(),hum.c_str(),light);
   Serial.println(buffer);
   delay(5000);
 }

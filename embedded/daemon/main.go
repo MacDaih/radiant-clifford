@@ -1,28 +1,30 @@
 package main
 
 import (
-	"os"
-	"log"
+	"encoding/json"
 	"fmt"
-	"time"
+
+	b "./bootstrap"
+	d "./domain"
+
+	"github.com/tarm/serial"
 )
 
 func main() {
+	c := &serial.Config{Name: b.PATH, Baud: 9600}
+	s, err := serial.OpenPort(c)
+	if err != nil {
+		fmt.Printf("can't open /dev/ttyACM0y: %s \n", err)
+	}
 	for {
-		tty, err := os.Open("/dev/ttyACM0")
-		if err != nil {
-			log.Fatalf("can't open /dev/tty: %s", err)
-		}
-
-		b := make([]byte,512)
-
-		r, err := tty.Read(b)
-
+		buf := make([]byte, 128)
+		n, err := s.Read(buf)
 		if err != nil {
 			fmt.Println(err)
 		}
-
-		fmt.Printf("Result => %s \n", string(b[:r]))
-		time.Sleep(time.Millisecond * 5000)
+		// log.Printf("%s", buf[:n])
+		var r d.Report
+		res := json.Unmarshal(buf[:n], &r)
+		fmt.Println(res)
 	}
 }
