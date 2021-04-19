@@ -1,30 +1,44 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
+
+	"time"
 
 	b "./bootstrap"
 	d "./domain"
-
 	"github.com/tarm/serial"
 )
 
 func main() {
-	c := &serial.Config{Name: b.PATH, Baud: 9600}
+	path := b.SetDevice()
+	fmt.Println(path)
+	c := &serial.Config{Name: path, Baud: 9600}
 	s, err := serial.OpenPort(c)
 	if err != nil {
-		fmt.Printf("can't open /dev/ttyACM0y: %s \n", err)
+		fmt.Printf("%s \n", err)
 	}
-	for {
-		buf := make([]byte, 128)
-		n, err := s.Read(buf)
-		if err != nil {
-			fmt.Println(err)
-		}
-		// log.Printf("%s", buf[:n])
-		var r d.Report
-		res := json.Unmarshal(buf[:n], &r)
-		fmt.Println(res)
+	scanner := bufio.NewScanner(s)
+	for scanner.Scan() {
+		readSerial(scanner.Bytes())
+		time.Sleep(time.Millisecond * 5000)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func readSerial(s []byte) {
+	var r d.Report
+	now := time.Now().Unix()
+	r.RptAt = now
+	err := json.Unmarshal(s, &r)
+	if err != nil {
+		log.Println(err)
+	} else {
+		log.Println(r)
 	}
 }

@@ -1,12 +1,8 @@
 package domain
 
-import (
-	"time"
-)
-
 type Report struct {
-	RptAt time.Time
-	Temp  float64
-	Hum   float64
-	Light int32
+	RptAt int64   `json:"time"`
+	Temp  float64 `json:"t"`
+	Hum   float64 `json:"h"`
+	Light int32   `json:"l"`
 }
