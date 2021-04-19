@@ -6,3 +6,5 @@ type Report struct {
 	Hum   float64 `json:"h"`
 	Light int32   `json:"l"`
 }
+
+type Reports []Report
