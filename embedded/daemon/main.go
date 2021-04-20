@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"time"
 
 	a "./actions"
 	b "./bootstrap"
 	d "./domain"
+	u "./utils"
 	"github.com/tarm/serial"
 )
 
@@ -19,10 +19,10 @@ func main() {
 	c := &serial.Config{Name: path, Baud: 9600}
 	s, err := serial.OpenPort(c)
 	if err != nil {
-		fmt.Printf("%s \n", err)
+		u.ErrLog(err)
+		return
 	}
 	scanner := bufio.NewScanner(s)
-
 	for scanner.Scan() {
 		res, err := readSerial(scanner.Bytes())
 		if err != nil {
@@ -33,9 +33,8 @@ func main() {
 		a.WriteCache(res)
 		time.Sleep(time.Millisecond * 5000)
 	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
+	err = scanner.Err()
+	u.ErrLog(err)
 }
 
 func readSerial(s []byte) (d.Report, error) {
