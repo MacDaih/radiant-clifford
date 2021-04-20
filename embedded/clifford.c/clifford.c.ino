@@ -13,13 +13,12 @@ void setup() {
 
 void loop() {
   int light = analogRead(A3);
-
   
   int chk = DHT.read(DHT11_PIN);
-  String temp = String(DHT.temperature);
-  String hum = String(DHT.humidity);
+  float temp = float(DHT.temperature);
+  float hum = float(DHT.humidity);
   char buffer[512];
-  sprintf(buffer,"{\"t\":\"%s\",\"h\":\"%s\",\"l\":%i}",temp.c_str(),hum.c_str(),light);
+  sprintf(buffer,"{\"t\":%d.%02d,\"h\":%d.%02d,\"l\":%i}",(int)temp,(int)(temp*100/100),(int)hum,(int)(hum*100/100),light);
   Serial.println(buffer);
   delay(5000);
 }

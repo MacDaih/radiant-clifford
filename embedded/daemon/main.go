@@ -18,6 +18,7 @@ func main() {
 	path := b.SetDevice()
 	c := &serial.Config{Name: path, Baud: 9600}
 	s, err := serial.OpenPort(c)
+
 	if err != nil {
 		u.ErrLog(err)
 		return
