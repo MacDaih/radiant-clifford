@@ -18,20 +18,19 @@ func main() {
 	path := b.SetDevice()
 	c := &serial.Config{Name: path, Baud: 9600}
 	s, err := serial.OpenPort(c)
-
-	if err != nil {
-		u.ErrLog(err)
+	if u.ErrLog(err) {
 		return
 	}
 	scanner := bufio.NewScanner(s)
 	for scanner.Scan() {
 		res, err := readSerial(scanner.Bytes())
-		if err != nil {
+		if u.ErrLog(err) {
 			continue
-		} else {
-			fmt.Println(res)
 		}
-		a.WriteCache(res)
+		go a.WriteCache(res)
+		go func() {
+			fmt.Println("I Might be useful")
+		}()
 		time.Sleep(time.Millisecond * 5000)
 	}
 	err = scanner.Err()

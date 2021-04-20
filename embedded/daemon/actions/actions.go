@@ -2,17 +2,15 @@ package actions
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	d "../domain"
+	u "../utils"
 )
 
 func WriteCache(data d.Report) {
-	b, _ := json.Marshal(data)
+	b, err := json.Marshal(data)
 	f, err := os.Create("cache.json")
-	if err != nil {
-		log.Println(err)
-	}
+	u.ErrLog(err)
 	f.Write(b)
 }
