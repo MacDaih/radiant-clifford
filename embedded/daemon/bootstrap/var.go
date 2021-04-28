@@ -5,6 +5,8 @@ import "runtime"
 const (
 	PATH_DRWN = "/dev/cu.usbmodem14101"
 	PATH_LNX  = "/dev/ttyACM0"
+
+	LOGS = "dev.log"
 )
 
 func SetDevice() string {

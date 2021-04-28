@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 
 	"time"
 
@@ -18,23 +17,25 @@ func main() {
 	path := b.SetDevice()
 	c := &serial.Config{Name: path, Baud: 9600}
 	s, err := serial.OpenPort(c)
-	if u.ErrLog(err) {
+	if u.ErrLog("Reading Err : ", err) {
 		return
 	}
 	scanner := bufio.NewScanner(s)
+	var reports []d.Report
 	for scanner.Scan() {
-		res, err := readSerial(scanner.Bytes())
-		if u.ErrLog(err) {
+		r, err := readSerial(scanner.Bytes())
+		if u.ErrLog("Report Err : ", err) {
 			continue
 		}
-		go a.WriteCache(res)
-		go func() {
-			fmt.Println("I Might be useful")
-		}()
+		reports = append(reports, r)
+		if len(reports) == 4 {
+			a.InsertReports(reports)
+			reports = reports[4:]
+		}
 		time.Sleep(time.Millisecond * 5000)
 	}
 	err = scanner.Err()
-	u.ErrLog(err)
+	u.ErrLog("Scan Err : ", err)
 }
 
 func readSerial(s []byte) (d.Report, error) {
