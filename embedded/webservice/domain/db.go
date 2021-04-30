@@ -2,12 +2,15 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+
+	u "webservice/utils"
 )
 
 type Report struct {
@@ -54,15 +57,20 @@ func GetReports(elapse int64) ([]Report, error) {
 		return []Report{}, err
 	}
 	col := cli.Database("radiant_clifford").Collection("report")
+	//Commented for dev purpose
 	// filter := bson.M{"report_time": bson.M{"$gte": elapse}}
 	// filter
-	c, err := col.Find(ctx, bson.M{})
-	if err != nil {
+	opt := options.Find()
+	opt.SetSort(bson.M{"report_time": -1})
+	c, err := col.Find(ctx, bson.D{}, opt)
+
+	if u.ErrLog("Get Report Err : ", err) {
 		return []Report{}, err
 	}
 	for c.Next(ctx) {
 		var r Report
 		c.Decode(&r)
+		fmt.Println(c)
 		reports = append(reports, r)
 	}
 	return reports, nil
