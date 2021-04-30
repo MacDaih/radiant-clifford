@@ -13,7 +13,12 @@ const (
 	TWE = 43200
 )
 
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
 func ReportsHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	t := time.Now().Unix()
 	last := t - TWE
 	reports, err := d.GetReports(last)
@@ -44,7 +49,7 @@ func formatSample(reports []d.Report) d.ReportSample {
 				maxHum = j.Temp
 			}
 			if minHum > j.Hum {
-				minHum = j.Temp
+				minHum = j.Hum
 			}
 		}
 		avHum, avTemp := average(reports)
