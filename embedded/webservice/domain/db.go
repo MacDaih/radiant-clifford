@@ -12,12 +12,24 @@ import (
 
 type Report struct {
 	RptAt int64   `bson:"report_time" json:"time"`
-	Temp  float64 `bson:"temp" json:"t"`
-	Hum   float64 `bson:"hum" json:"h"`
-	Light int32   `bson:"ligth" json:"l"`
+	Temp  float64 `bson:"temp" json:"temperature"`
+	Hum   float64 `bson:"hum" json:"humidity"`
+	Light int32   `bson:"ligth" json:"light_lvl"`
 }
 
-type Reports []Report
+type Overview struct {
+	TempAverage float64 `json:"temp_av"`
+	HumAverage  float64 `json:"hum_av"`
+	MaxTemp     float64 `json:"max_temp"`
+	MinTemp     float64 `json:"min_temp"`
+	MaxHum      float64 `json:"max_hum"`
+	MinHum      float64 `json:"min_hum"`
+}
+
+type ReportSample struct {
+	Metrics Overview
+	Reports []Report
+}
 
 func connectDB() (*mongo.Client, error) {
 	uri := "mongodb://localhost:27017"
@@ -33,17 +45,20 @@ func connectDB() (*mongo.Client, error) {
 	return client, nil
 }
 
-func GetReports() (Reports, error) {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	var reports Reports
+func GetReports(elapse int64) ([]Report, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	var reports []Report
 	cli, err := connectDB()
+	defer cancel()
 	if err != nil {
-		return Reports{}, err
+		return []Report{}, err
 	}
 	col := cli.Database("radiant_clifford").Collection("report")
-	c, err := col.Find(ctx, bson.D{})
+	// filter := bson.M{"report_time": bson.M{"$gte": elapse}}
+	// filter
+	c, err := col.Find(ctx, bson.M{})
 	if err != nil {
-		return Reports{}, err
+		return []Report{}, err
 	}
 	for c.Next(ctx) {
 		var r Report
