@@ -18,7 +18,7 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func ReportsHandler(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
+	// enableCors(&w)
 	t := time.Now().Unix()
 	last := t - TWE
 	reports, err := d.GetReports(last)

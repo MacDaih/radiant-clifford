@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -35,6 +34,7 @@ type ReportSample struct {
 }
 
 func connectDB() (*mongo.Client, error) {
+	//URI & credentials to be specified
 	uri := "mongodb://localhost:27017"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -70,7 +70,6 @@ func GetReports(elapse int64) ([]Report, error) {
 	for c.Next(ctx) {
 		var r Report
 		c.Decode(&r)
-		fmt.Println(c)
 		reports = append(reports, r)
 	}
 	return reports, nil
