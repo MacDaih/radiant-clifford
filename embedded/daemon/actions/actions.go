@@ -8,8 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
-	d "../domain"
-	u "../utils"
+	d "daemon/domain"
+	u "daemon/utils"
 )
 
 func connectDB() *mongo.Client {

@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	b "../bootstrap"
+	b "daemon/bootstrap"
 )
 
 func ErrLog(prefix string, err error) bool {
