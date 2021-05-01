@@ -9,10 +9,10 @@ import (
 
 func ErrLog(prefix string, err error) bool {
 	if err != nil {
-		f, err := os.OpenFile(b.LOGS,
+		f, err2 := os.OpenFile(b.LOGS,
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Println(err)
+		if err2 != nil {
+			log.Println(err2)
 		}
 		defer f.Close()
 		logger := log.New(f, prefix, log.LstdFlags)

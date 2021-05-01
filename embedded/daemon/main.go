@@ -6,10 +6,11 @@ import (
 
 	"time"
 
-	a "./actions"
-	b "./bootstrap"
-	d "./domain"
-	u "./utils"
+	a "daemon/actions"
+	b "daemon/bootstrap"
+	d "daemon/domain"
+	u "daemon/utils"
+
 	"github.com/tarm/serial"
 )
 
