@@ -1,11 +1,11 @@
 FROM golang:1.16.3-alpine3.12
 
-RUN mkdir /ws
+RUN mkdir /daemon
 
-ADD . /ws
+ADD . /daemon
 
-WORKDIR /ws
+WORKDIR /daemon
 
 RUN go build -o main .
 
-CMD ["/ws/main"]
+CMD ["/daemon/main"]

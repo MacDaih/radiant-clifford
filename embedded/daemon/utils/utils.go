@@ -17,6 +17,7 @@ func ErrLog(prefix string, err error) bool {
 		defer f.Close()
 		logger := log.New(f, prefix, log.LstdFlags)
 		logger.Println(err)
+		log.Println(err)
 		return true
 	}
 	return false
