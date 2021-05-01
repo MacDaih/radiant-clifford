@@ -7,3 +7,4 @@
 - Arduino writes temperature, humidity and ambient light level
 - Daemon read Arduino tty Output
 - Daemon store latest measurements
+- Webservice for standard api
