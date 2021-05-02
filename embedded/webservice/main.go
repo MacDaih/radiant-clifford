@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	h "webservice/handlers"
 
@@ -13,5 +14,5 @@ func main() {
 	router.HandleFunc("/reports", h.ReportsHandler).Methods("GET")
 	router.Handle("/", router)
 
-	http.ListenAndServe(":8080", router)
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
