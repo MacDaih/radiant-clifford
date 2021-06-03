@@ -7,28 +7,34 @@ import (
 	"time"
 	d "webservice/domain"
 	u "webservice/utils"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
 	TWE = 43200
 )
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
+}
+
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func ReportsHandler(w http.ResponseWriter, r *http.Request) {
-	// enableCors(&w)
+	enableCors(&w)
 	t := time.Now().Unix()
 	last := t - TWE
 	reports, err := d.GetReports(last)
-	sample := formatSample(reports)
 	if u.ErrLog("Get Reports Err : ", err) {
 		w.WriteHeader(http.StatusServiceUnavailable)
-	} else {
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(sample)
 	}
+	sample := formatSample(reports)
+	json.NewEncoder(w).Encode(sample)
 }
 
 func formatSample(reports []d.Report) d.ReportSample {

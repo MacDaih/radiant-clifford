@@ -13,6 +13,6 @@ func SetDevice() string {
 	if runtime.GOOS == "darwin" {
 		return PATH_DRWN
 	} else {
-		return PATH_DRWN
+		return PATH_LNX
 	}
 }

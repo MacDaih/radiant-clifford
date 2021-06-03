@@ -6,6 +6,6 @@ ADD . /daemon
 
 WORKDIR /daemon
 
-RUN go build -o main .
+RUN GOOS=linux GOARCH=arm64 go build -o main .
 
 CMD ["/daemon/main"]

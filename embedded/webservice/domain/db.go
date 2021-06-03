@@ -35,7 +35,7 @@ type ReportSample struct {
 
 func connectDB() (*mongo.Client, error) {
 	//URI & credentials to be specified
-	uri := "mongodb://localhost:27017"
+	uri := "mongodb://test:test@mongodb:27017"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
@@ -45,6 +45,7 @@ func connectDB() (*mongo.Client, error) {
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		return nil, err
 	}
+
 	return client, nil
 }
 
@@ -57,12 +58,10 @@ func GetReports(elapse int64) ([]Report, error) {
 		return []Report{}, err
 	}
 	col := cli.Database("radiant_clifford").Collection("report")
-	//Commented for dev purpose
-	// filter := bson.M{"report_time": bson.M{"$gte": elapse}}
-	// filter
+	filter := bson.M{"report_time": bson.M{"$gte": elapse}}
 	opt := options.Find()
 	opt.SetSort(bson.M{"report_time": -1})
-	c, err := col.Find(ctx, bson.D{}, opt)
+	c, err := col.Find(ctx, filter, opt)
 
 	if u.ErrLog("Get Report Err : ", err) {
 		return []Report{}, err
@@ -72,5 +71,6 @@ func GetReports(elapse int64) ([]Report, error) {
 		c.Decode(&r)
 		reports = append(reports, r)
 	}
+	defer cli.Disconnect(ctx)
 	return reports, nil
 }

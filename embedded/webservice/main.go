@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	h "webservice/handlers"
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	fmt.Println("Webservice")
 	router := mux.NewRouter().StrictSlash(true)
 
 	router.HandleFunc("/reports", h.ReportsHandler).Methods("GET")

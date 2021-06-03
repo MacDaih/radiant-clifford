@@ -6,6 +6,8 @@ ADD . /ws
 
 WORKDIR /ws
 
-RUN go build -o main .
+RUN GOOS=linux GOARCH=arm64 go build -o main .
 
 CMD ["/ws/main"]
+
+EXPOSE 8080

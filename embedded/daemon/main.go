@@ -17,6 +17,7 @@ import (
 func main() {
 	path := b.SetDevice()
 	c := &serial.Config{Name: path, Baud: 9600}
+
 	s, err := serial.OpenPort(c)
 	if u.ErrLog("Reading Err : ", err) {
 		return
@@ -33,7 +34,7 @@ func main() {
 			a.InsertReports(reports)
 			reports = reports[4:]
 		}
-		time.Sleep(time.Millisecond * 5000)
+		time.Sleep(time.Millisecond * 300000)
 	}
 	err = scanner.Err()
 	u.ErrLog("Scan Err : ", err)
