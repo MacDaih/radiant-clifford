@@ -57,11 +57,11 @@ func GetReports(elapse int64) ([]Report, error) {
 	if err != nil {
 		return []Report{}, err
 	}
+	var filter bson.M
 	col := cli.Database("radiant_clifford").Collection("report")
 	filter := bson.M{"report_time": bson.M{"$gte": elapse}}
-	opt := options.Find()
-	opt.SetSort(bson.M{"report_time": -1})
-	c, err := col.Find(ctx, filter, opt)
+
+	c, err := col.Find(ctx, filter, nil)
 
 	if u.ErrLog("Get Report Err : ", err) {
 		return []Report{}, err

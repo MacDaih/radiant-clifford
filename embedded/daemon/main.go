@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 
+	"fmt"
 	"time"
 
 	a "daemon/actions"
@@ -12,6 +13,11 @@ import (
 	u "daemon/utils"
 
 	"github.com/tarm/serial"
+)
+
+const (
+	HOTTEST = 60.00
+	COLDEST = -88.00
 )
 
 func main() {
@@ -47,6 +53,13 @@ func readSerial(s []byte) (d.Report, error) {
 	err := json.Unmarshal(s, &r)
 	if err != nil {
 		return d.Report{}, err
+	}
+	if r.Temp > HOTTEST {
+		hotErr := fmt.Errorf("Recorded Temp. is exceeding a normal treshold (%d °C) : %d", r.Temp)
+		return d.Report{}, hotErr
+	} else if r.Temp < COLDEST {
+		hotErr := fmt.Errorf("Recorded Temp. is below a negative treshold (%d °C) : %d", r.Temp)
+		return d.Report{}, hotErr
 	}
 	return r, nil
 }

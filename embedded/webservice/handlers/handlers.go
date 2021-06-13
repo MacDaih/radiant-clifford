@@ -8,18 +8,12 @@ import (
 	d "webservice/domain"
 	u "webservice/utils"
 
-	"github.com/gorilla/websocket"
+	"github.com/gorilla/mux"
 )
 
 const (
 	TWE = 43200
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-}
 
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
@@ -37,6 +31,11 @@ func ReportsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sample)
 }
 
+func MonthlyReport(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars
+	var date int64 = vars["range"]
+
+}
 func formatSample(reports []d.Report) d.ReportSample {
 	if len(reports) > 0 {
 		var o d.Overview
