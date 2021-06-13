@@ -7,8 +7,6 @@ import (
 	"time"
 	d "webservice/domain"
 	u "webservice/utils"
-
-	"github.com/gorilla/mux"
 )
 
 const (
@@ -31,11 +29,6 @@ func ReportsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sample)
 }
 
-func MonthlyReport(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars
-	var date int64 = vars["range"]
-
-}
 func formatSample(reports []d.Report) d.ReportSample {
 	if len(reports) > 0 {
 		var o d.Overview
