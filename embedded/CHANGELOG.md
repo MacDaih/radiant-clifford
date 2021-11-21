@@ -8,3 +8,4 @@
 - Daemon read Arduino tty Output
 - Daemon store latest measurements
 - Webservice for standard api
+

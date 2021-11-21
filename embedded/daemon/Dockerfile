@@ -1,11 +1,10 @@
 FROM golang:1.16.3-alpine3.12
 
-RUN mkdir /daemon
+WORKDIR /go/src/daemon
 
-ADD . /daemon
+COPY . .
 
-WORKDIR /daemon
-
+RUN go mod download
 RUN GOOS=linux GOARCH=arm64 go build -o main .
 
-CMD ["/daemon/main"]
+CMD ["/go/src/daemon/main"]

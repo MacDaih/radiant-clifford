@@ -1,13 +1,12 @@
 FROM golang:1.16.3-alpine3.12
 
-RUN mkdir /ws
+WORKDIR /go/src/ws
 
-ADD . /ws
+COPY . .
 
-WORKDIR /ws
-
+RUN go mod download
 RUN GOOS=linux GOARCH=arm64 go build -o main .
 
-CMD ["/ws/main"]
+CMD ["/go/src/ws/main"]
 
 EXPOSE 8080
