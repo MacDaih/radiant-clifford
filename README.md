@@ -1,2 +1,2 @@
 # radiant-clifford
-Full stack small meteo station system
+Full stack small weather station system
