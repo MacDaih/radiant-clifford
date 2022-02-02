@@ -10,8 +10,8 @@
 #include "LPS22HB.h"
 #include "SHTC3.h"
 
-#define BUFFER_LENGTH   6
-#define THERMO "/tmp/thermo.sock"
+#define BUFFER_LENGTH 6
+#define THERMO "thermo.sock"
 
 int fd;
 unsigned char u8Buf[3];
@@ -147,6 +147,7 @@ void serve_sock(char *sock, char *key) {
     if (rc < 0)
         perror("bind() failed");
 
+    chmod(sock, 0777);
     rc = listen(sd, 10);
 
     if (rc < 0)
@@ -219,6 +220,7 @@ int main() {
     }
     fd=wiringPiI2CSetup(SHTC3_I2C_ADDRESS);
     SHTC_SOFT_RESET();
+
     char socket[] = THERMO;
     char key[] = "thermo";
     serve_sock(socket, key);

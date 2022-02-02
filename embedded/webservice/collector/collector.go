@@ -1,25 +1,22 @@
-package main
+package collector
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
+	"log"
 	"time"
 
-	a "daemon/actions"
-	d "daemon/domain"
-	u "daemon/utils"
+	d "webservice/domain"
+	u "webservice/utils"
 )
 
 const (
-	SOCK    = "/tmp/thermo.sock"
 	HOTTEST = 60.00
 	COLDEST = -88.00
-	KEY     = "thermo"
 )
 
-func readSock(conn io.Reader) {
+func ReadSock(conn io.Reader, e chan error) {
 	buf := make([]byte, 256)
 	var reports []d.Report
 	for {
@@ -28,45 +25,33 @@ func readSock(conn io.Reader) {
 			continue
 		}
 		report, err := readSerial(buf[0:n])
+		log.Println(report)
 		if ok := u.ErrLog("serialization error : ", err); !ok {
 			continue
 		}
 		reports = append(reports, report)
 
 		if len(reports) == 4 {
-			a.InsertReports(reports)
+			err = d.InsertReports(reports)
+			if ok := u.ErrLog("insert error : ", err); !ok {
+				e <- err
+			}
 			reports = reports[4:]
 		}
 	}
 }
 
-func main() {
-	conn, err := net.Dial("unix", SOCK)
-
-	if err != nil {
-		panic(err)
-	}
-
-	defer conn.Close()
-
-	go readSock(conn)
-	for {
-		_, err := conn.Write([]byte(KEY))
-		if u.ErrLog("writing err : ", err) {
-			return
-		}
-		time.Sleep(time.Minute * 1)
-	}
-}
-
 func readSerial(s []byte) (d.Report, error) {
-	var r d.Report = d.Report{}
-	now := time.Now().Unix()
-	r.RptAt = now
+
+	r := d.Report{
+		RptAt: time.Now().Unix(),
+	}
+
 	err := json.Unmarshal(s, &r)
 	if err != nil {
 		return d.Report{}, err
 	}
+
 	if r.Temp > HOTTEST {
 		hotErr := fmt.Errorf("recorded temp. is exceeding a normal treshold (%f °C) : %f", HOTTEST, r.Temp)
 		return d.Report{}, hotErr
@@ -74,5 +59,6 @@ func readSerial(s []byte) (d.Report, error) {
 		hotErr := fmt.Errorf("recorded temp. is below a negative treshold (%f °C) : %f", COLDEST, r.Temp)
 		return d.Report{}, hotErr
 	}
+
 	return r, nil
 }

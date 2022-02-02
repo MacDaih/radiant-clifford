@@ -7,6 +7,6 @@ COPY . .
 RUN go mod download
 RUN GOOS=linux GOARCH=arm64 go build -o main .
 
-CMD ["/go/src/ws/main"]
-
 EXPOSE 8080
+
+CMD ["/go/src/ws/main"]

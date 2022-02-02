@@ -59,18 +59,40 @@ func GetReports(elapse int64) ([]Report, error) {
 	}
 	var filter bson.M
 	col := cli.Database("radiant_clifford").Collection("report")
-	filter := bson.M{"report_time": bson.M{"$gte": elapse}}
+	filter = bson.M{"report_time": bson.M{"$gte": elapse}}
 
 	c, err := col.Find(ctx, filter, nil)
 
 	if u.ErrLog("Get Report Err : ", err) {
 		return []Report{}, err
 	}
+
 	for c.Next(ctx) {
 		var r Report
-		c.Decode(&r)
+		u.ErrLog("error fetching report : ", c.Decode(&r))
 		reports = append(reports, r)
 	}
 	defer cli.Disconnect(ctx)
 	return reports, nil
+}
+
+func InsertReports(arr []Report) error {
+	var res []interface{}
+	for _, j := range arr {
+		res = append(res, j)
+	}
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	cli, err := connectDB()
+
+	if err != nil {
+		return err
+	}
+	col := cli.Database("radiant_clifford").Collection("report")
+	_, err = col.InsertMany(ctx, res)
+
+	if err != nil {
+		return err
+	}
+
+	return cli.Disconnect(ctx)
 }

@@ -14,7 +14,7 @@ VOLUME ["/data/db"]
 WORKDIR /data/db
 
 EXPOSE 27017
-ENTRYPOINT ["user/bin/mongo", "--smallfiles"]
+ENTRYPOINT ["/usr/bin/mongod", "--smallfiles"]
 
 
 

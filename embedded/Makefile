@@ -1,9 +1,12 @@
+UID := $(shell id -u)
+GID := $(shell id -g)
+
 all: build-clifford build-services
 
 build-clifford:
-	gcc -Wall -o thermo ~/embedded/clifford/clifford.c -lwiringPi
-	chmod +x ./thermo 
-	./thermo > /dev/null 2>&1
+	gcc -Wall -o thermo ./clifford/clifford.c -lwiringPi
+	chmod +x ./thermo
+	./thermo & 
 
 build-services:
-	docker-compose up --build
+	UID=${UID} GID=${GID} docker-compose up --build
