@@ -12,6 +12,8 @@ services:
       - MONGO_INITDB_PWD=test
     ports:
       - 27017:27017
+    networks:
+      - clifford
     volumes:
       - mongo:/data/db
     
@@ -20,16 +22,23 @@ services:
     container_name: clifford-ws
     build: ./webservice
     environment:
-      - PORT=:8080
-      - SOCKET=/home/ubuntu/embedded/thermo.sock
-      - KEY=thermo
+      PORT: :8080
+      SOCKET: /home/ubuntu/embedded/thermo.sock
+      KEY: thermo
+      DB_URI: mongodb:27017
     depends_on:
       - mongodb
     restart: always
     ports:
       - "8080:8080"
+    networks:
+      - clifford
     volumes:
       - /home/ubuntu/embedded/thermo.sock:/home/ubuntu/embedded/thermo.sock
+
+networks:
+  clifford:
+    driver: "bridge"
 volumes:
   mongo:
   thermo:

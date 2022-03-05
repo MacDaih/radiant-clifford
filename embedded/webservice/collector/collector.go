@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
 	d "webservice/domain"
@@ -25,7 +24,6 @@ func ReadSock(conn io.Reader, e chan error) {
 			continue
 		}
 		report, err := readSerial(buf[0:n])
-		log.Println(report)
 		if ok := u.ErrLog("serialization error : ", err); !ok {
 			continue
 		}

@@ -22,6 +22,7 @@ func main() {
 
 	go expose(port, httpError)
 	go collect(socket, key, collError)
+
 	select {
 	case err := <-httpError:
 		log.Fatalf("Http Server error : %s", err)
@@ -53,7 +54,6 @@ func collect(socket string, key string, e chan error) {
 
 	for {
 		if _, err := conn.Write([]byte(key)); err != nil {
-			log.Println(err)
 			e <- err
 		}
 		time.Sleep(time.Minute * 1)
