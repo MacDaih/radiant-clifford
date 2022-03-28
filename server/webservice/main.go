@@ -14,20 +14,20 @@ import (
 
 func main() {
 	port := os.Getenv("PORT")
-	socket := "/home/ubuntu/embedded/thermo.sock"
-	key := os.Getenv("KEY")
+	// socket := "/home/ubuntu/embedded/thermo.sock"
+	// key := os.Getenv("KEY")
 
 	httpError := make(chan error)
-	collError := make(chan error)
+	// collError := make(chan error)
 
 	go expose(port, httpError)
-	go collect(socket, key, collError)
+	// go collect(socket, key, collError)
 
 	select {
 	case err := <-httpError:
 		log.Fatalf("Http Server error : %s", err)
-	case err := <-collError:
-		log.Fatalf("Data collector error : %s", err)
+		// case err := <-collError:
+		// 	log.Fatalf("Data collector error : %s", err)
 	}
 }
 

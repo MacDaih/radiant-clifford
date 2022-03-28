@@ -14,6 +14,13 @@ import (
 	u "webservice/utils"
 )
 
+var authOpt = options.Credential{
+	AuthMechanism: os.Getenv("AUTH"),
+	AuthSource:    os.Getenv("DB_NAME"),
+	Username:      os.Getenv("DB_USER"),
+	Password:      os.Getenv("DB_PWD"),
+}
+
 type Report struct {
 	RptAt int64   `bson:"report_time" json:"time"`
 	Temp  float64 `bson:"temp" json:"temperature"`
@@ -36,11 +43,13 @@ type ReportSample struct {
 }
 
 func connectDB() (*mongo.Client, error) {
-	//URI & credentials to be specified
-	uri := fmt.Sprintf("mongodb://test:test@%s", os.Getenv("DB_URI"))
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	uri := fmt.Sprintf("mongodb://%s:%s", host, port)
+	clientopt := options.Client().SetAuth(authOpt).ApplyURI(uri)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, clientopt)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +69,7 @@ func GetReports(elapse int64) ([]Report, error) {
 		return []Report{}, err
 	}
 	var filter bson.M
-	col := cli.Database("radiant_clifford").Collection("report")
+	col := cli.Database(os.Getenv("DB_NAME")).Collection("report")
 	filter = bson.M{"report_time": bson.M{"$gte": elapse}}
 
 	c, err := col.Find(ctx, filter, nil)

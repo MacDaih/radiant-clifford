@@ -1,44 +1,40 @@
 version: '3'
 services:
-  mongodb:
-    image: mdb
-    container_name: clifford-db
-    build: ./db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=test
-      - MONGO_INITDB_ROOT_PASSWORD=test
-      - MONGO_INITDB_DATABASE=radiant_clifford
-      - MONGO_INITDB_USER=test
-      - MONGO_INITDB_PWD=test
-    ports:
-      - 27017:27017
-    networks:
-      - clifford
-    volumes:
-      - mongo:/data/db
-    
   webservice:
     image: ws
     container_name: clifford-ws
     build: ./webservice
     environment:
-      PORT: :8080
-      SOCKET: /home/ubuntu/embedded/thermo.sock
-      KEY: thermo
-      DB_URI: mongodb:27017
+      - PORT=:8080
+      - DB_HOST=radiant_db
+      - DB_PORT=27017
+      - DB_NAME=radiant
+      - DB_USER=clifford
+      - DB_PWD=1234567
+      - AUTH=SCRAM-SHA-256
     depends_on:
-      - mongodb
+      - radiant_db
     restart: always
     ports:
       - "8080:8080"
     networks:
       - clifford
+  radiant_db:
+    image: "mongo:4.0"
+    container_name: radiant-db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "root"
+      MONGO_NAME: "radiant"
+      MONGO_USER: "clifford"
+      MONGO_PASS: "1234567"
+      MONGO_AUTH: "SCRAM-SHA-256"
     volumes:
-      - /home/ubuntu/embedded/thermo.sock:/home/ubuntu/embedded/thermo.sock
-
+      - "./db:/docker-entrypoint-initdb.d"
+    networks:
+      - clifford
 networks:
   clifford:
     driver: "bridge"
-volumes:
-  mongo:
-  thermo:
