@@ -7,6 +7,3 @@ build-clifford:
 	gcc -Wall -o thermo ./clifford/clifford.c -lwiringPi
 	chmod +x ./thermo
 	./thermo & 
-
-build-services:
-	UID=${UID} GID=${GID} docker-compose up --build
