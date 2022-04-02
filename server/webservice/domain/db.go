@@ -109,6 +109,5 @@ func InsertReport(r Report) error {
 		log.Println("db query error : ", err)
 		return err
 	}
-
 	return cli.Disconnect(ctx)
 }
