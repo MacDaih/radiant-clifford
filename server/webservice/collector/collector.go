@@ -2,12 +2,10 @@ package collector
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"time"
+	"log"
+	"net"
 
 	d "webservice/domain"
-	u "webservice/utils"
 )
 
 const (
@@ -15,48 +13,20 @@ const (
 	COLDEST = -88.00
 )
 
-func ReadSock(conn io.Reader, e chan error) {
-	buf := make([]byte, 256)
-	var reports []d.Report
-	for {
-		n, err := conn.Read(buf[:])
-		if ok := u.ErrLog("reading error : ", err); !ok {
-			continue
-		}
-		report, err := readSerial(buf[0:n])
-		if ok := u.ErrLog("serialization error : ", err); !ok {
-			continue
-		}
-		reports = append(reports, report)
+func ReadSock(conn net.Conn, e chan error) {
 
-		if len(reports) == 4 {
-			err = d.InsertReports(reports)
-			if ok := u.ErrLog("insert error : ", err); !ok {
-				e <- err
-			}
-			reports = reports[4:]
-		}
-	}
-}
+	var r d.Report
+	dc := json.NewDecoder(conn)
 
-func readSerial(s []byte) (d.Report, error) {
-
-	r := d.Report{
-		RptAt: time.Now().Unix(),
-	}
-
-	err := json.Unmarshal(s, &r)
+	err := dc.Decode(&r)
 	if err != nil {
-		return d.Report{}, err
+		log.Println("decoding error : ", err)
+		e <- err
 	}
 
-	if r.Temp > HOTTEST {
-		hotErr := fmt.Errorf("recorded temp. is exceeding a normal treshold (%f °C) : %f", HOTTEST, r.Temp)
-		return d.Report{}, hotErr
-	} else if r.Temp < COLDEST {
-		hotErr := fmt.Errorf("recorded temp. is below a negative treshold (%f °C) : %f", COLDEST, r.Temp)
-		return d.Report{}, hotErr
+	err = d.InsertReport(r)
+	if err != nil {
+		log.Println("failed to report error : ", err)
+		e <- err
 	}
-
-	return r, nil
 }

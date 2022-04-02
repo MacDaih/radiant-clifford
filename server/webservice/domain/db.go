@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -87,21 +88,25 @@ func GetReports(elapse int64) ([]Report, error) {
 	return reports, nil
 }
 
-func InsertReports(arr []Report) error {
-	var res []interface{}
-	for _, j := range arr {
-		res = append(res, j)
-	}
+func InsertReport(r Report) error {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	cli, err := connectDB()
 
 	if err != nil {
+		log.Println("db conn error : ", err)
 		return err
 	}
-	col := cli.Database("radiant_clifford").Collection("report")
-	_, err = col.InsertMany(ctx, res)
+	col := cli.Database("radiant").Collection("report")
+
+	_, err = col.InsertOne(ctx, bson.M{
+		"report_time": time.Now().Unix(),
+		"temp":        r.Temp,
+		"hum":         r.Hum,
+		"light":       r.Light,
+	})
 
 	if err != nil {
+		log.Println("db query error : ", err)
 		return err
 	}
 
