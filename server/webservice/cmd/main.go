@@ -6,13 +6,25 @@ import (
 	"net/http"
 	"os"
 	"time"
-	c "webservice/collector"
-	h "webservice/handlers"
+	"webservice/internal/database"
+	"webservice/internal/handlers"
+
+	"webservice/internal/repository"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
+	dbClient, err := database.ConnectDB()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	repo := repository.NewReportRepository(dbClient)
+
+	hdlr := handlers.NewServiceHandler(repo)
+
 	port := os.Getenv("PORT")
 	socket := os.Getenv("SENSOR_PORT")
 	key := os.Getenv("KEY")
@@ -20,8 +32,8 @@ func main() {
 	httpError := make(chan error)
 	collError := make(chan error)
 
-	go expose(port, httpError)
-	go collect(socket, key, collError)
+	go expose(port, hdlr, httpError)
+	go collect(socket, key, hdlr, collError)
 
 	select {
 	case err := <-httpError:
@@ -31,7 +43,7 @@ func main() {
 	}
 }
 
-func expose(p string, e chan error) {
+func expose(p string, h handlers.Handler, e chan error) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -41,15 +53,14 @@ func expose(p string, e chan error) {
 	e <- http.ListenAndServe(p, router)
 }
 
-func collect(socket string, key string, e chan error) {
-	log.Println("collecting from tpc")
+func collect(socket string, key string, h handlers.Handler, e chan error) {
 	conn, err := net.Dial("tcp", socket)
 
 	if err != nil {
 		e <- err
 	}
 
-	go c.ReadSock(conn, e)
+	go h.ReadSock(conn, e)
 
 	for {
 		if _, err := conn.Write([]byte(key)); err != nil {

@@ -1,28 +1,64 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"math"
+	"net"
 	"net/http"
 	"time"
-	d "webservice/domain"
-	u "webservice/utils"
+	d "webservice/internal/domain"
+	"webservice/internal/repository"
 )
 
 const (
 	TWE = 43200
 )
 
+// For dev purpose only
 func enableCors(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
-func ReportsHandler(w http.ResponseWriter, r *http.Request) {
+type serviceHandler struct {
+	repository repository.Repository
+}
+type Handler interface {
+	ReadSock(conn net.Conn, e chan error)
+	ReportsHandler(w http.ResponseWriter, r *http.Request)
+}
+
+func NewServiceHandler(repository repository.Repository) Handler {
+	return &serviceHandler{
+		repository: repository,
+	}
+}
+
+func (s *serviceHandler) ReadSock(conn net.Conn, e chan error) {
+
+	var r d.Report
+	dc := json.NewDecoder(conn)
+
+	err := dc.Decode(&r)
+	if err != nil {
+		log.Println("decoding error : ", err)
+		e <- err
+	}
+
+	err = s.repository.InsertReport(context.Background(), r)
+	if err != nil {
+		log.Println("failed to report error : ", err)
+		e <- err
+	}
+}
+
+func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	t := time.Now().Unix()
 	last := t - TWE
-	reports, err := d.GetReports(last)
-	if u.ErrLog("Get Reports Err : ", err) {
+	reports, err := s.repository.GetReports(r.Context(), last)
+	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	sample := formatSample(reports)
