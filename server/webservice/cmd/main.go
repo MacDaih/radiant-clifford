@@ -15,19 +15,27 @@ import (
 )
 
 func main() {
-	dbClient, err := database.ConnectDB()
+
+	port := os.Getenv("PORT")
+	socket := os.Getenv("SENSOR_PORT")
+	key := os.Getenv("KEY")
+
+	dbName := os.Getenv("DB_NAME")
+
+	host := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+
+	dbClient, err := database.ConnectDB(host, dbPort)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	repo := repository.NewReportRepository(dbClient)
+	db := dbClient.Database(dbName)
+
+	repo := repository.NewReportRepository(db)
 
 	hdlr := handlers.NewServiceHandler(repo)
-
-	port := os.Getenv("PORT")
-	socket := os.Getenv("SENSOR_PORT")
-	key := os.Getenv("KEY")
 
 	httpError := make(chan error)
 	collError := make(chan error)

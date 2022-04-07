@@ -3,12 +3,15 @@ package repository
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 	"webservice/internal/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	collection = "report"
 )
 
 type Repository interface {
@@ -17,12 +20,12 @@ type Repository interface {
 }
 
 type reportsRepo struct {
-	client *mongo.Client
+	db *mongo.Database
 }
 
-func NewReportRepository(c *mongo.Client) Repository {
+func NewReportRepository(c *mongo.Database) Repository {
 	return &reportsRepo{
-		client: c,
+		db: c,
 	}
 }
 
@@ -30,7 +33,7 @@ func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Re
 	var reports []domain.Report
 
 	var filter bson.M
-	col := r.client.Database(os.Getenv("DB_NAME")).Collection("report")
+	col := r.db.Collection(collection)
 	filter = bson.M{"report_time": bson.M{"$gte": elapse}}
 
 	c, err := col.Find(ctx, filter, nil)
@@ -43,17 +46,17 @@ func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Re
 	for c.Next(ctx) {
 		var r domain.Report
 		if err := c.Decode(&r); err != nil {
-			log.Println(err)
+			log.Println("reading report error : ", err)
 			continue
 		}
 		reports = append(reports, r)
 	}
-	defer r.client.Disconnect(ctx)
+	defer r.db.Client().Disconnect(ctx)
 	return reports, nil
 }
 
 func (r *reportsRepo) InsertReport(ctx context.Context, report domain.Report) error {
-	col := r.client.Database("radiant").Collection("report")
+	col := r.db.Collection(collection)
 
 	_, err := col.InsertOne(ctx, bson.M{
 		"report_time": time.Now().Unix(),
@@ -66,5 +69,5 @@ func (r *reportsRepo) InsertReport(ctx context.Context, report domain.Report) er
 		log.Println("db query error : ", err)
 		return err
 	}
-	return r.client.Disconnect(ctx)
+	return r.db.Client().Disconnect(ctx)
 }
