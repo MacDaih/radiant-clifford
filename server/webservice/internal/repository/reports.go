@@ -3,15 +3,20 @@ package repository
 import (
 	"context"
 	"log"
-	"time"
+	"os"
+	"webservice/internal/database"
 	"webservice/internal/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
 	collection = "report"
+)
+
+var (
+	host = os.Getenv("DB_HOST")
+	port = os.Getenv("DB_PORT")
 )
 
 type Repository interface {
@@ -20,54 +25,47 @@ type Repository interface {
 }
 
 type reportsRepo struct {
-	db *mongo.Database
+	dbname string
 }
 
-func NewReportRepository(c *mongo.Database) Repository {
+func NewReportRepository(name string) Repository {
 	return &reportsRepo{
-		db: c,
+		dbname: name,
 	}
 }
 
 func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Report, error) {
+	client, err := database.ConnectDB(host, port)
+
+	if err != nil {
+		return nil, err
+	}
+
 	var reports []domain.Report
 
-	var filter bson.M
-	col := r.db.Collection(collection)
-	filter = bson.M{"report_time": bson.M{"$gte": elapse}}
-
-	c, err := col.Find(ctx, filter, nil)
+	filter := bson.M{"report_time": bson.M{"$gte": elapse}}
+	coll := client.Database(r.dbname).Collection(collection)
+	res, err := coll.Find(ctx, filter)
 
 	if err != nil {
-		log.Println(err)
-		return []domain.Report{}, err
+		log.Println("read err : ", err)
+		res.Close(ctx)
+		return nil, err
 	}
 
-	for c.Next(ctx) {
+	for res.Next(ctx) {
 		var r domain.Report
-		if err := c.Decode(&r); err != nil {
-			log.Println("reading report error : ", err)
+		if err = res.Decode(&r); err != nil {
+			log.Println(err)
 			continue
 		}
+		log.Println(r)
 		reports = append(reports, r)
 	}
-	defer r.db.Client().Disconnect(ctx)
-	return reports, nil
+	log.Println(reports)
+	return reports, err
 }
 
-func (r *reportsRepo) InsertReport(ctx context.Context, report domain.Report) error {
-	col := r.db.Collection(collection)
-
-	_, err := col.InsertOne(ctx, bson.M{
-		"report_time": time.Now().Unix(),
-		"temp":        report.Temp,
-		"hum":         report.Hum,
-		"light":       report.Light,
-	})
-
-	if err != nil {
-		log.Println("db query error : ", err)
-		return err
-	}
-	return r.db.Client().Disconnect(ctx)
+func (r *reportsRepo) InsertReport(ctx context.Context, report domain.Report) (err error) {
+	return database.Write(ctx, r.dbname, collection, report)
 }

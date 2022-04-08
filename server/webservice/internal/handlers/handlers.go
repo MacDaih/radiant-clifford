@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net"
@@ -25,7 +26,7 @@ type serviceHandler struct {
 	repository repository.Repository
 }
 type Handler interface {
-	ReadSock(conn net.Conn, e chan error)
+	ReadSock(conn net.Conn)
 	ReportsHandler(w http.ResponseWriter, r *http.Request)
 }
 
@@ -35,22 +36,31 @@ func NewServiceHandler(repository repository.Repository) Handler {
 	}
 }
 
-func (s *serviceHandler) ReadSock(conn net.Conn, e chan error) {
+func (s *serviceHandler) ReadSock(conn net.Conn) {
+	reply := make([]byte, 512)
 
 	var r d.Report
-	dc := json.NewDecoder(conn)
 
-	err := dc.Decode(&r)
-	if err != nil {
-		log.Println("decoding error : ", err)
-		e <- err
+	if _, err := conn.Read(reply); err != nil {
+		log.Println("read err : ", err)
+		return
 	}
 
-	err = s.repository.InsertReport(context.Background(), r)
-	if err != nil {
-		log.Println("failed to report error : ", err)
-		e <- err
+	var buf []byte
+	for i := range reply {
+		if reply[i] == 0 {
+			buf = reply[0:i]
+			break
+		}
 	}
+
+	fmt.Println(buf)
+	if err := json.Unmarshal(buf, &r); err != nil {
+		log.Printf("unmarshal err : %v %v", err, string(buf))
+		return
+	}
+	r.RptAt = time.Now().Unix()
+	s.repository.InsertReport(context.Background(), r)
 }
 
 func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +69,7 @@ func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) 
 	last := t - TWE
 	reports, err := s.repository.GetReports(r.Context(), last)
 	if err != nil {
+		log.Println("report handler err : ", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	sample := formatSample(reports)

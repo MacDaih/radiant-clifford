@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-	"webservice/internal/database"
 	"webservice/internal/handlers"
 
 	"webservice/internal/repository"
@@ -22,18 +21,7 @@ func main() {
 
 	dbName := os.Getenv("DB_NAME")
 
-	host := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-
-	dbClient, err := database.ConnectDB(host, dbPort)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db := dbClient.Database(dbName)
-
-	repo := repository.NewReportRepository(db)
+	repo := repository.NewReportRepository(dbName)
 
 	hdlr := handlers.NewServiceHandler(repo)
 
@@ -62,19 +50,22 @@ func expose(p string, h handlers.Handler, e chan error) {
 }
 
 func collect(socket string, key string, h handlers.Handler, e chan error) {
+
 	conn, err := net.Dial("tcp", socket)
 
 	if err != nil {
 		e <- err
 	}
 
-	go h.ReadSock(conn, e)
+	defer conn.Close()
 
 	for {
-		if _, err := conn.Write([]byte(key)); err != nil {
-			log.Println(err)
-			e <- err
+		_, err := conn.Write([]byte(key))
+		time.Sleep(time.Second * 3)
+		if err != nil {
+			log.Println("tcp err : ", err)
+			continue
 		}
-		time.Sleep(time.Minute * 1)
+		go h.ReadSock(conn)
 	}
 }

@@ -11,15 +11,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var authOpt = options.Credential{
-	AuthMechanism: os.Getenv("AUTH"),
-	AuthSource:    os.Getenv("DB_NAME"),
-	Username:      os.Getenv("DB_USER"),
-	Password:      os.Getenv("DB_PWD"),
-}
+var (
+	authOpt = options.Credential{
+		AuthMechanism: os.Getenv("AUTH"),
+		AuthSource:    os.Getenv("DB_NAME"),
+		Username:      os.Getenv("DB_USER"),
+		Password:      os.Getenv("DB_PWD"),
+	}
+	host = os.Getenv("DB_HOST")
+	port = os.Getenv("DB_PORT")
+)
 
 func ConnectDB(host string, port string) (*mongo.Client, error) {
-
 	uri := fmt.Sprintf("mongodb://%s:%s", host, port)
 	clientopt := options.Client().SetAuth(authOpt).ApplyURI(uri)
 
@@ -38,3 +41,48 @@ func ConnectDB(host string, port string) (*mongo.Client, error) {
 
 	return client, nil
 }
+
+func Write(ctx context.Context, dbName string, collName string, args interface{}) error {
+	client, err := ConnectDB(host, port)
+
+	if err != nil {
+		return err
+	}
+
+	coll := client.Database(dbName).Collection(collName)
+
+	_, err = coll.InsertOne(ctx, args)
+
+	defer func() {
+		client.Disconnect(ctx)
+	}()
+
+	return err
+}
+
+// func ReadMany(ctx context.Context, dbName string, collName string, args interface{}) ([]interface{}, error) {
+// 	client, err :=
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	coll := client.Database(dbName).Collection(collName)
+
+// 	res, err := coll.Find(ctx, args)
+// 	if err != nil {
+// 		log.Println("coll err : ", err)
+// 		return nil, err
+// 	}
+
+// 	var i []interface{}
+// 	for res.Next(ctx) {
+// 		i = append(i, res.)
+// 	}
+
+// 	defer func() {
+// 		client.Disconnect(ctx)
+// 	}()
+
+// 	return i, err
+// }

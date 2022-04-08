@@ -2,8 +2,8 @@ package domain
 
 type Report struct {
 	RptAt int64   `bson:"report_time" json:"time"`
-	Temp  float64 `bson:"temp" json:"temperature"`
-	Hum   float64 `bson:"hum" json:"humidity"`
+	Temp  float64 `bson:"temp" json:"temp"`
+	Hum   float64 `bson:"hum" json:"hum"`
 	Light int32   `bson:"ligth" json:"light_lvl"`
 }
 type ReportSample struct {
