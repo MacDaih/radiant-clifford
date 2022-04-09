@@ -49,20 +49,18 @@ func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Re
 
 	if err != nil {
 		log.Println("read err : ", err)
-		res.Close(ctx)
 		return nil, err
 	}
+	defer res.Close(ctx)
 
 	for res.Next(ctx) {
 		var r domain.Report
 		if err = res.Decode(&r); err != nil {
-			log.Println(err)
+			log.Println("decoding err ", err)
 			continue
 		}
-		log.Println(r)
 		reports = append(reports, r)
 	}
-	log.Println(reports)
 	return reports, err
 }
 

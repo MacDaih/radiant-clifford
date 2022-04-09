@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-
 	port := os.Getenv("PORT")
 	socket := os.Getenv("SENSOR_PORT")
 	key := os.Getenv("KEY")
@@ -33,9 +32,9 @@ func main() {
 
 	select {
 	case err := <-httpError:
-		log.Fatalf("Http Server error : %s", err)
+		log.Fatalf("http Server error : %s", err)
 	case err := <-collError:
-		log.Fatalf("Data collector error : %s", err)
+		log.Fatalf("data collector error : %s", err)
 	}
 }
 
@@ -61,7 +60,7 @@ func collect(socket string, key string, h handlers.Handler, e chan error) {
 
 	for {
 		_, err := conn.Write([]byte(key))
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 60)
 		if err != nil {
 			log.Println("tcp err : ", err)
 			continue

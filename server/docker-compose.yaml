@@ -5,6 +5,8 @@ services:
     container_name: mock-srvc
     build: ./sock_mock
     restart: always
+    environment:
+      KEY: "probe"
     ports:
       - "9090:9090"
     networks:
@@ -22,6 +24,7 @@ services:
       DB_USER: "clifford"
       DB_PWD: "1234567"
       AUTH: "SCRAM-SHA-256"
+      KEY: "probe"
     depends_on:
       - radiant_db
     restart: always

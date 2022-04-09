@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"net"
@@ -54,9 +53,8 @@ func (s *serviceHandler) ReadSock(conn net.Conn) {
 		}
 	}
 
-	fmt.Println(buf)
 	if err := json.Unmarshal(buf, &r); err != nil {
-		log.Printf("unmarshal err : %v %v", err, string(buf))
+		log.Printf("unmarshal err : %v %v")
 		return
 	}
 	r.RptAt = time.Now().Unix()
