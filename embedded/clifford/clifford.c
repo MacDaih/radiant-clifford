@@ -9,6 +9,13 @@
 #include <unistd.h>
 #include "LPS22HB.h"
 #include "SHTC3.h"
+#include <netdb.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+
+#define MAX 80
+#define PORT 8080
+#define SA struct sockaddr
 
 #define BUFFER_LENGTH 6
 #define THERMO "thermo.sock"
@@ -72,14 +79,14 @@ void SHTC_SOFT_RESET() {
 void SHTC3_Read_DATA() {   
     unsigned short TH_DATA,RH_DATA;
     char buf[3];
-   SHTC3_WriteCommand(SHTC3_NM_CD_ReadTH);                 //Read temperature first,clock streching disabled (polling)
+    SHTC3_WriteCommand(SHTC3_NM_CD_ReadTH);                 //Read temperature first,clock streching disabled (polling)
     delay(20);
-    read(fd, buf, 3);
+    read(fd, buf, sizeof(buf));
 
-   checksum=buf[2];
-   if(!SHTC3_CheckCrc(buf,2,checksum))
+    checksum=buf[2];
+    if(!SHTC3_CheckCrc(buf,2,checksum))
         TH_DATA=(buf[0]<<8|buf[1]);
-    
+        
     SHTC3_WriteCommand(SHTC3_NM_CD_ReadRH);                 //Read temperature first,clock streching disabled (polling)
     delay(20);
     read(fd, buf, 3);
@@ -87,8 +94,8 @@ void SHTC3_Read_DATA() {
     checksum=buf[2];
     if(!SHTC3_CheckCrc(buf,2,checksum))
         RH_DATA=(buf[0]<<8|buf[1]);
-    
-    TH_Value=175 * (float)TH_DATA / 65536.0f - 45.0f;       //Calculate temperature value
+
+    TH_Value=175 * ((float)TH_DATA / 65536.0f) - 45.0f;       //Calculate temperature value
     RH_Value=100 * (float)RH_DATA / 65536.0f;              //Calculate humidity value     
 }
 
@@ -129,39 +136,42 @@ unsigned char LPS22HB_INIT() {
     return 1;
 }
 
-void serve_sock(char *sock, char *key) {
-    int    sd=-1, sd2=-1;
-    int    rc, length;
-    char   buffer[BUFFER_LENGTH];
-    struct sockaddr_un serveraddr;
+void serve_tcp() {
+    int sockfd = -1;
+    int conn, len;
+    struct sockaddr_in addr, cli;
+   
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    sd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sd < 0)
-        perror("socket() failed");
+    if (sockfd == -1) {
+        perror("failed to create socket \n");
+        exit(0);
+    }
 
-    memset(&serveraddr, 0, sizeof(serveraddr));
-    serveraddr.sun_family = AF_UNIX;
-    strcpy(serveraddr.sun_path, sock);
+    bzero(&addr, sizeof(addr));
 
-    rc = bind(sd, (struct sockaddr *)&serveraddr, SUN_LEN(&serveraddr));
-    if (rc < 0)
-        perror("bind() failed");
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(PORT);
 
-    chmod(sock, 0777);
-    rc = listen(sd, 10);
+    if (bind(sockfd,(SA*)&addr,sizeof(addr)) != 0) {
+        perror("failed to bind socket\n");
+        exit(0);
+    }
 
-    if (rc < 0)
-        perror("listen() failed");
+    if (listen(sockfd, 1) != 0) {
+        perror("failed to listen\n");
+        exit(0);
+    }
 
-    sd2 = accept(sd, NULL, NULL);
-    if (sd2 < 0)
-        perror("accept() failed");
+    len = sizeof(cli);
 
-    length = BUFFER_LENGTH;
-    rc = setsockopt(sd2, SOL_SOCKET, SO_RCVLOWAT,(char *)&length, sizeof(length));
-    if (rc < 0)
-        perror("setsockopt(SO_RCVLOWAT) failed");
-
+    char buffer[MAX];
+    conn = accept(sockfd, (SA*)&cli,&len);
+    if (conn < 0) {
+        perror("accepting connection failed");
+        exit(0);
+    }
     for (;;) {
         LPS22HB_START_ONESHOT();        //Trigger one shot data acquisition
         if((I2C_readByte(LPS_STATUS)&0x01)==0x01)   //a new pressure data is generated
@@ -182,32 +192,23 @@ void serve_sock(char *sock, char *key) {
         SHTC3_WAKEUP();
 
         char str[256];
-        sprintf(str, "{\"p\":%6.2f,\"dt\":%6.2f,\"t\":%6.2f,\"h\":%6.2f}",  PRESS_DATA, TEMP_DATA, TH_Value, RH_Value);
+        sprintf(str, "{\"press\":%6.2f,\"temp\":%6.2f,\"hum\":%6.2f}",  PRESS_DATA, TH_Value, RH_Value);
+        bzero(buffer, MAX);
+        int r = recv(conn,buffer,sizeof(buffer),0);
 
-        rc = recv(sd2, key, sizeof(key), 0);
-        if (rc < 0){
-            perror("recv() failed");
-            break;
-        } 
-
-        if (rc == 0 || rc < sizeof(buffer)) {
-            printf("Connection closed with client");
+        if (r < 0 ) {
+            perror("read message error");
             break;
         }
 
-        rc = send(sd2, str, sizeof(str), 0);
-        if (rc < 0) {
-            perror("send() failed");
+        if (send(conn, str, sizeof(str),0) < 0) {
+            perror("sending message error");
             break;
         }
+
     }
-    if (sd != -1)
-        close(sd);
+    close(sockfd);
 
-    if (sd2 != -1)
-        close(sd2);
-
-    unlink(sock);
 }
 
 int main() {  
@@ -221,8 +222,6 @@ int main() {
     fd=wiringPiI2CSetup(SHTC3_I2C_ADDRESS);
     SHTC_SOFT_RESET();
 
-    char socket[] = THERMO;
-    char key[] = "thermo";
-    serve_sock(socket, key);
+    serve_tcp();
     return 0;
 }

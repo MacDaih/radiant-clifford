@@ -37,9 +37,23 @@ func NewServiceHandler(repository repository.Repository) Handler {
 
 func (s *serviceHandler) ReadSock(conn net.Conn) {
 	var r d.Report
+	buf := make([]byte, 128)
+	rb, err := conn.Read(buf)
 
-	if err := json.NewDecoder(conn).Decode(&r); err != nil {
-		log.Printf("decoding err : %v", err)
+	if err != nil {
+		log.Printf("reading err : %s\n", err.Error())
+		return
+	}
+
+	index := 0
+	for i, v := range buf[:rb] {
+		if string(v) == "}" {
+			index = i + 1
+		}
+	}
+	err = json.Unmarshal(buf[:index], &r)
+	if err != nil {
+		log.Printf("decoding err : %s\n", err.Error())
 		return
 	}
 	r.RptAt = time.Now().Unix()

@@ -40,7 +40,7 @@ func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Re
 	if err != nil {
 		return nil, err
 	}
-
+	defer client.Disconnect(ctx)
 	var reports []domain.Report
 
 	filter := bson.M{"report_time": bson.M{"$gte": elapse}}

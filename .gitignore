@@ -2,3 +2,5 @@
 /.vscode
 /embedded/daemon/dev.log
 /embedded/webservice/dev.log
+
+.env

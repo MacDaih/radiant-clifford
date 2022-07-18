@@ -1,23 +1,24 @@
 version: '3'
 services:
-  mock:
-    image: mocker
-    container_name: mock-srvc
-    build: ./sock_mock
-    restart: always
-    environment:
-      KEY: "probe"
-    ports:
-      - "9090:9090"
-    networks:
-      - clifford
+  # Mock socket
+  # mock:
+  #   image: mocker
+  #   container_name: mock-srvc
+  #   build: ./sock_mock
+  #   restart: always
+  #   environment:
+  #     KEY: "probe"
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - clifford
   webservice:
     image: ws
     container_name: clifford-ws
     build: ./webservice
     environment:
       PORT: ":8080"
-      SENSOR_PORT: "mock:9090"
+      SENSOR_PORT: "192.168.1.83:8080"
       DB_HOST: "radiant_db"
       DB_PORT: "27017"
       DB_NAME: "radiant"

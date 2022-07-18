@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	log.Println("Starting webservice")
 	port := os.Getenv("PORT")
 	socket := os.Getenv("SENSOR_PORT")
 	key := os.Getenv("KEY")
@@ -29,7 +30,7 @@ func main() {
 
 	go expose(port, hdlr, httpError)
 	go collect(socket, key, hdlr, collError)
-
+	log.Println("Collect and expose")
 	select {
 	case err := <-httpError:
 		log.Fatalf("http Server error : %s", err)
@@ -49,20 +50,27 @@ func expose(p string, h handlers.Handler, e chan error) {
 }
 
 func collect(socket string, key string, h handlers.Handler, e chan error) {
-
-	conn, err := net.Dial("tcp", socket)
+	log.Println("Collector running")
+	addr, err := net.ResolveTCPAddr("tcp4", socket)
+	if err != nil {
+		log.Printf("resolving address error : %s\n", err.Error())
+		e <- err
+	}
+	conn, err := net.DialTCP("tcp", nil, addr)
 
 	if err != nil {
+		log.Printf("dial to address error : %s\n", err.Error())
 		e <- err
 	}
 
 	defer conn.Close()
 
 	for {
+		log.Println("Write ", key)
 		_, err := conn.Write([]byte(key))
-		time.Sleep(time.Second * 60)
+		time.Sleep(time.Second * 10)
 		if err != nil {
-			log.Println("tcp err : ", err)
+			log.Println(err)
 			continue
 		}
 		go h.ReadSock(conn)

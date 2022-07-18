@@ -4,7 +4,7 @@ type Report struct {
 	RptAt int64   `bson:"report_time" json:"time"`
 	Temp  float64 `bson:"temp" json:"temp"`
 	Hum   float64 `bson:"hum" json:"hum"`
-	Light int32   `bson:"ligth" json:"light_lvl"`
+	Light int32   `bson:"ligth" json:"light"`
 }
 type ReportSample struct {
 	Metrics Overview
