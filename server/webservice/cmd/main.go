@@ -66,13 +66,12 @@ func collect(socket string, key string, h handlers.Handler, e chan error) {
 	defer conn.Close()
 
 	for {
-		log.Println("Write ", key)
 		_, err := conn.Write([]byte(key))
-		time.Sleep(time.Second * 10)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		go h.ReadSock(conn)
+		h.ReadSock(conn)
+		<-time.After(time.Second * 10)
 	}
 }

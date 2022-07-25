@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	TWE = 43200
+	DAY = 86200
 )
 
 // For dev purpose only
@@ -24,6 +24,7 @@ func enableCors(w *http.ResponseWriter) {
 type serviceHandler struct {
 	repository repository.Repository
 }
+
 type Handler interface {
 	ReadSock(conn net.Conn)
 	ReportsHandler(w http.ResponseWriter, r *http.Request)
@@ -51,6 +52,7 @@ func (s *serviceHandler) ReadSock(conn net.Conn) {
 			index = i + 1
 		}
 	}
+
 	err = json.Unmarshal(buf[:index], &r)
 	if err != nil {
 		log.Printf("decoding err : %s\n", err.Error())
@@ -63,7 +65,7 @@ func (s *serviceHandler) ReadSock(conn net.Conn) {
 func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	t := time.Now().Unix()
-	last := t - TWE
+	last := t - DAY
 	reports, err := s.repository.GetReports(r.Context(), last)
 	if err != nil {
 		log.Println("report handler err : ", err)

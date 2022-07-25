@@ -5,7 +5,9 @@ type Report struct {
 	Temp  float64 `bson:"temp" json:"temp"`
 	Hum   float64 `bson:"hum" json:"hum"`
 	Light int32   `bson:"ligth" json:"light"`
+	Press float64 `bson:"press" json:"press"`
 }
+
 type ReportSample struct {
 	Metrics Overview
 	Reports []Report

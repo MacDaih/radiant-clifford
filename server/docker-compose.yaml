@@ -18,7 +18,7 @@ services:
     build: ./webservice
     environment:
       PORT: ":8080"
-      SENSOR_PORT: "192.168.1.83:8080"
+      SENSOR_PORT: "192.168.1.90:8080"
       DB_HOST: "radiant_db"
       DB_PORT: "27017"
       DB_NAME: "radiant"
@@ -31,6 +31,7 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    expose: [8080]
     networks:
       - clifford
   radiant_db:
@@ -46,8 +47,8 @@ services:
       MONGO_PASS: "1234567"
       MONGO_AUTH: "SCRAM-SHA-256"
     volumes:
-      - "./db/:/docker-entrypoint-initdb.d"
-      - "data:/data/db"
+      - ./db/init.js:/docker-entrypoint-initdb.d/init.js:ro
+      - data:/data/db
     networks:
       - clifford
 networks:

@@ -17,15 +17,10 @@
 #define PORT 8080
 #define SA struct sockaddr
 
-#define BUFFER_LENGTH 6
-#define THERMO "thermo.sock"
+int fd,fp;
 
-int fd;
+float TH_Value,RH_Value, PRESS_DATA;
 unsigned char u8Buf[3];
-float PRESS_DATA=0;
-float TEMP_DATA=0;
-
-float TH_Value,RH_Value;
 char checksum;
 char SDA = 8;
 char SCL = 9;
@@ -64,10 +59,8 @@ void SHTC3_WriteCommand(unsigned short cmd) {
 void SHTC3_WAKEUP() {     
     SHTC3_WriteCommand(SHTC3_WakeUp);                  // write wake_up command  
     delayMicroseconds(300);                          //Delay 300us
-      
 }
 void SHTC3_SLEEP() {    
- //   bcm2835_i2c_begin();
     SHTC3_WriteCommand(SHTC3_Sleep);                        // Write sleep command  
 }
 
@@ -99,18 +92,23 @@ void SHTC3_Read_DATA() {
     RH_Value=100 * (float)RH_DATA / 65536.0f;              //Calculate humidity value     
 }
 
-char I2C_readByte(int reg) {
-	return wiringPiI2CReadReg8(fd, reg);
+char I2C_readByte(int reg)
+{
+	return wiringPiI2CReadReg8(fp, reg);
 }
 
-unsigned short I2C_readU16(int reg) {
-	return wiringPiI2CReadReg16(fd, reg);
+unsigned short I2C_readU16(int reg)
+{
+	return wiringPiI2CReadReg16(fp, reg);
 }
 
-void I2C_writeByte(int reg, int val) {
-	wiringPiI2CWriteReg8(fd, reg, val);
+void I2C_writeByte(int reg, int val)
+{
+	wiringPiI2CWriteReg8(fp, reg, val);
 }
-void LPS22HB_RESET() {   unsigned char Buf;
+
+void LPS22HB_RESET()
+{   unsigned char Buf;
     Buf=I2C_readU16(LPS_CTRL_REG2);
     Buf|=0x04;                                         
     I2C_writeByte(LPS_CTRL_REG2,Buf);                  //SWRESET Set 1
@@ -120,16 +118,16 @@ void LPS22HB_RESET() {   unsigned char Buf;
         Buf&=0x04;
     }
 }
-
-void LPS22HB_START_ONESHOT() {
+void LPS22HB_START_ONESHOT()
+{
     unsigned char Buf;
     Buf=I2C_readU16(LPS_CTRL_REG2);
     Buf|=0x01;                                         //ONE_SHOT Set 1
     I2C_writeByte(LPS_CTRL_REG2,Buf);
 }
-
-unsigned char LPS22HB_INIT() {
-    fd=wiringPiI2CSetup(LPS22HB_I2C_ADDRESS);
+unsigned char LPS22HB_INIT()
+{
+    fp=wiringPiI2CSetup(LPS22HB_I2C_ADDRESS);
     if(I2C_readByte(LPS_WHO_AM_I)!=LPS_ID) return 0;    //Check device ID 
     LPS22HB_RESET();                                    //Wait for reset to complete
     I2C_writeByte(LPS_CTRL_REG1 ,   0x02);              //Low-pass filter disabled , output registers not updated until MSB and LSB have been read , Enable Block Data Update , Set Output Data Rate to 0 
@@ -172,7 +170,13 @@ void serve_tcp() {
         perror("accepting connection failed");
         exit(0);
     }
-    for (;;) {
+
+    while(1) {
+
+        SHTC3_Read_DATA();
+        SHTC3_SLEEP();
+        SHTC3_WAKEUP();
+
         LPS22HB_START_ONESHOT();        //Trigger one shot data acquisition
         if((I2C_readByte(LPS_STATUS)&0x01)==0x01)   //a new pressure data is generated
         {
@@ -181,16 +185,7 @@ void serve_tcp() {
             u8Buf[2]=I2C_readByte(LPS_PRESS_OUT_H);
             PRESS_DATA=(float)((u8Buf[2]<<16)+(u8Buf[1]<<8)+u8Buf[0])/4096.0f;
         }
-        if((I2C_readByte(LPS_STATUS)&0x02)==0x02) {
-            u8Buf[0]=I2C_readByte(LPS_TEMP_OUT_L);
-            u8Buf[1]=I2C_readByte(LPS_TEMP_OUT_H);
-            TEMP_DATA=(float)((u8Buf[1]<<8)+u8Buf[0])/100.0f;
-        }
-
-        SHTC3_Read_DATA();
-        SHTC3_SLEEP();
-        SHTC3_WAKEUP();
-
+        
         char str[256];
         sprintf(str, "{\"press\":%6.2f,\"temp\":%6.2f,\"hum\":%6.2f}",  PRESS_DATA, TH_Value, RH_Value);
         bzero(buffer, MAX);
@@ -205,10 +200,8 @@ void serve_tcp() {
             perror("sending message error");
             break;
         }
-
     }
     close(sockfd);
-
 }
 
 int main() {  
