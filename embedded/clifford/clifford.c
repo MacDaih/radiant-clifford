@@ -3,21 +3,30 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include "LPS22HB.h"
-#include "SHTC3.h"
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdlib.h>
+#include"AD.h"
+#include "LPS22HB.h"
+#include "SHTC3.h"
 
 #define MAX 80
 #define PORT 8080
 #define SA struct sockaddr
 
-int fd,fp;
+struct ain_data {
+    float temp;
+    float lux;
+};
+
+int fd,fp,fad;
+
+int Config_Set;
 
 float TH_Value,RH_Value, PRESS_DATA;
 unsigned char u8Buf[3];
@@ -26,6 +35,7 @@ char SDA = 8;
 char SCL = 9;
 
 char temphum[80];
+struct ain_data ad = {0};
 
 char SHTC3_CheckCrc(char data[],unsigned char len,unsigned char checksum) {
   unsigned char bit;        // bit mask
@@ -52,8 +62,7 @@ char SHTC3_CheckCrc(char data[],unsigned char len,unsigned char checksum) {
 
 void SHTC3_WriteCommand(unsigned short cmd) {   
     char buf[] = { (cmd>>8) ,cmd};
-    wiringPiI2CWriteReg8(fd,buf[0],buf[1]);          
-                                                 //1:error 0:No error
+    wiringPiI2CWriteReg8(fd,buf[0],buf[1]);
 }
 
 void SHTC3_WAKEUP() {     
@@ -102,6 +111,62 @@ unsigned short I2C_readU16(int reg)
 	return wiringPiI2CReadReg16(fp, reg);
 }
 
+int I2C_AD_readU16(int reg)
+{   int val;
+    unsigned char Val_L,Val_H;
+    val=wiringPiI2CReadReg16(fad,reg);                    //High and low bytes are the opposite       
+    Val_H=val&0xff;
+    Val_L=val>>8;
+    val=(Val_H<<8)|Val_L;                               //Correct byte order
+    return val;
+}
+
+void I2C_writeWord(int reg, int val)
+{   unsigned char Val_L,Val_H;
+    Val_H=val&0xff;
+    Val_L=val>>8;
+    val=(Val_H<<8)|Val_L;                               ////Correct byte order
+	wiringPiI2CWriteReg16(fad,reg,val);
+}
+
+unsigned int ADS1015_INIT()
+{   unsigned int state;
+    state=I2C_AD_readU16(ADS_POINTER_CONFIG) & 0x8000  ;
+    return state;
+}
+
+unsigned int ADS1015_SINGLE_READ(unsigned int channel)           //Read single channel data
+{   
+    unsigned int data;
+    Config_Set = ADS_CONFIG_MODE_NOCONTINUOUS        |   //mode：Single-shot mode or power-down state    (default)
+                 ADS_CONFIG_PGA_4096                 |   //Gain= +/- 4.096V                              (default)
+                 ADS_CONFIG_COMP_QUE_NON             |   //Disable comparator                            (default)
+                 ADS_CONFIG_COMP_NONLAT              |   //Nonlatching comparator                        (default)
+                 ADS_CONFIG_COMP_POL_LOW             |   //Comparator polarity：Active low               (default)
+                 ADS_CONFIG_COMP_MODE_TRADITIONAL    |   //Traditional comparator                        (default)
+                 ADS_CONFIG_DR_RATE_1600             ;   //Data rate=1600SPS                             (default)
+    switch (channel)
+    {
+        case (0):
+            Config_Set |= ADS_CONFIG_MUX_SINGLE_0;
+            break;
+        case (1):
+            Config_Set |= ADS_CONFIG_MUX_SINGLE_1;
+            break;
+        case (2):
+            Config_Set |= ADS_CONFIG_MUX_SINGLE_2;
+            break;
+        case (3):
+            Config_Set |= ADS_CONFIG_MUX_SINGLE_3;
+            break;
+    }
+    Config_Set |=ADS_CONFIG_OS_SINGLE_CONVERT;
+    I2C_writeWord(ADS_POINTER_CONFIG,Config_Set);
+    delay(2);
+    data=I2C_AD_readU16(ADS_POINTER_CONVERT)>>4;
+    return data;
+}
+
 void I2C_writeByte(int reg, int val)
 {
 	wiringPiI2CWriteReg8(fp, reg, val);
@@ -132,6 +197,27 @@ unsigned char LPS22HB_INIT()
     LPS22HB_RESET();                                    //Wait for reset to complete
     I2C_writeByte(LPS_CTRL_REG1 ,   0x02);              //Low-pass filter disabled , output registers not updated until MSB and LSB have been read , Enable Block Data Update , Set Output Data Rate to 0 
     return 1;
+}
+
+void read_interface() {
+
+    // device voltage
+    int const AREF = 3.3;
+
+    int  AIN0_DATA,AIN1_DATA;
+    fad=wiringPiI2CSetup(ADS_I2C_ADDRESS);
+    if(ADS1015_INIT()!=0x8000) {	
+		return 1;
+	}
+    // AIN0 is dedicated to temp. sensor
+    AIN0_DATA=ADS1015_SINGLE_READ(0);
+    ad.temp = (float)(AIN0_DATA * 2) / 10;
+
+    // AIN0 is dedicated to lux / ambient light sensor
+    AIN1_DATA=ADS1015_SINGLE_READ(1);
+    float amps = (AIN1_DATA * AREF / 1024.0) / 10000.0;
+    float microamps = amps * 1000000.0;
+    ad.lux = microamps * 2.0;
 }
 
 void serve_tcp() {
@@ -186,8 +272,9 @@ void serve_tcp() {
             PRESS_DATA=(float)((u8Buf[2]<<16)+(u8Buf[1]<<8)+u8Buf[0])/4096.0f;
         }
         
+        read_interface();
         char str[256];
-        sprintf(str, "{\"press\":%6.2f,\"temp\":%6.2f,\"hum\":%6.2f}",  PRESS_DATA, TH_Value, RH_Value);
+        sprintf(str, "{\"press\":%6.2f,\"inner_temp\":%6.2f,\"hum\":%6.2f, \"temp\": %6.2f, \"light\": %6.2f}",  PRESS_DATA, TH_Value, RH_Value, ad.temp, ad.lux);
         bzero(buffer, MAX);
         int r = recv(conn,buffer,sizeof(buffer),0);
 
@@ -212,9 +299,16 @@ int main() {
         printf("\nPressure Sensor Error\n");
         return 0;
     }
+
+    if(ADS1015_INIT()!=0x8000) {	
+        printf("\nADS1015 interfacing Error\n");
+		return 0;
+	}
+    
     fd=wiringPiI2CSetup(SHTC3_I2C_ADDRESS);
+
     SHTC_SOFT_RESET();
 
     serve_tcp();
-    return 0;
+    return 1;
 }
