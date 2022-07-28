@@ -3,20 +3,14 @@ package repository
 import (
 	"context"
 	"log"
-	"os"
-	"webservice/internal/database"
 	"webservice/internal/domain"
+	"webservice/pkg/database"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 const (
 	collection = "report"
-)
-
-var (
-	host = os.Getenv("DB_HOST")
-	port = os.Getenv("DB_PORT")
 )
 
 type Repository interface {
@@ -26,16 +20,20 @@ type Repository interface {
 
 type reportsRepo struct {
 	dbname string
+	dbHost string
+	dbPort string
 }
 
-func NewReportRepository(name string) Repository {
+func NewReportRepository(name, dbHost, dbPort string) Repository {
 	return &reportsRepo{
 		dbname: name,
+		dbHost: dbHost,
+		dbPort: dbPort,
 	}
 }
 
 func (r *reportsRepo) GetReports(ctx context.Context, elapse int64) ([]domain.Report, error) {
-	client, err := database.ConnectDB(host, port)
+	client, err := database.ConnectDB(r.dbHost, r.dbPort)
 
 	if err != nil {
 		return nil, err

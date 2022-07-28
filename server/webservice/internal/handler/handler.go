@@ -1,11 +1,9 @@
-package handlers
+package handler
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"math"
-	"net"
 	"net/http"
 	"time"
 	d "webservice/internal/domain"
@@ -26,7 +24,6 @@ type serviceHandler struct {
 }
 
 type Handler interface {
-	ReadSock(conn net.Conn)
 	ReportsHandler(w http.ResponseWriter, r *http.Request)
 }
 
@@ -34,32 +31,6 @@ func NewServiceHandler(repository repository.Repository) Handler {
 	return &serviceHandler{
 		repository: repository,
 	}
-}
-
-func (s *serviceHandler) ReadSock(conn net.Conn) {
-	var r d.Report
-	buf := make([]byte, 128)
-	rb, err := conn.Read(buf)
-
-	if err != nil {
-		log.Printf("reading err : %s\n", err.Error())
-		return
-	}
-
-	index := 0
-	for i, v := range buf[:rb] {
-		if string(v) == "}" {
-			index = i + 1
-		}
-	}
-
-	err = json.Unmarshal(buf[:index], &r)
-	if err != nil {
-		log.Printf("decoding err : %s\n", err.Error())
-		return
-	}
-	r.RptAt = time.Now().Unix()
-	s.repository.InsertReport(context.Background(), r)
 }
 
 func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) {

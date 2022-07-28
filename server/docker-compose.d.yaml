@@ -1,17 +1,5 @@
 version: '3'
 services:
-  # Mock socket
-  mock:
-    image: mocker
-    container_name: mock-srvc
-    build: ./sock_mock
-    restart: always
-    environment:
-      - KEY
-    ports:
-      - "9090:9090"
-    networks:
-      - clifford
   webservice:
     image: ws
     container_name: clifford-ws
@@ -47,7 +35,7 @@ services:
       - MONGO_PASS
       - MONGO_AUTH
     volumes:
-      - ./db/init.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./db/init.js:/docker-entrypoint-initdb.d/init.js:ro
       - data:/data/db
     networks:
       - clifford
