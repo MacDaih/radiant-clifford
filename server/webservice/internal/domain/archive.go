@@ -6,9 +6,9 @@ import (
 )
 
 type Archive struct {
-	Label  string
-	Period TimeRange
-	Report
+	Ref    string    `json:"ref" bson:"ref"`
+	Period TimeRange `json:"period" bson:"period"`
+	Report `json:"report" bson:"report"`
 }
 
 func FormatArchive(archiveRange TimeRange, reports []Report) Archive {
@@ -23,10 +23,10 @@ func FormatArchive(archiveRange TimeRange, reports []Report) Archive {
 
 	from := time.Unix(archiveRange.From, 0)
 
-	label := fmt.Sprintf("%s_%d", from.Month().String(), from.Year())
+	label := FormatRef(from)
 
 	return Archive{
-		Label:  label,
+		Ref:    label,
 		Period: archiveRange,
 		Report: Report{
 			ReportedAt: archiveRange.From,
@@ -35,4 +35,8 @@ func FormatArchive(archiveRange TimeRange, reports []Report) Archive {
 			Press:      average(pressures),
 		},
 	}
+}
+
+func FormatRef(t time.Time) string {
+	return fmt.Sprintf("%s_%d", t.Month().String(), t.Year())
 }

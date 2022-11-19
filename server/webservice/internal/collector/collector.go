@@ -15,6 +15,7 @@ type serviceCollector struct {
 
 type Collector interface {
 	ReadSock(conn net.Conn) error
+	CleanUpWithArchive() error
 }
 
 func NewCollector(repository repository.Repository) Collector {
@@ -46,4 +47,52 @@ func (s *serviceCollector) ReadSock(conn net.Conn) error {
 
 	r.ReportedAt = time.Now().Unix()
 	return s.repository.InsertReport(context.Background(), r)
+}
+
+func (s *serviceCollector) CleanUpWithArchive() error {
+
+	ctx := context.Background()
+
+	today := time.Now()
+
+	ref := domain.FormatRef(today)
+
+	_, err := s.repository.GetArchive(ctx, ref)
+
+	switch err.(type) {
+	case domain.ErrNotFound:
+		goto proceed
+	default:
+		return err
+	}
+
+proceed:
+	prevmonth := today.Month() - 1
+	if prevmonth == 0 {
+		prevmonth = 12
+	}
+
+	delta := time.Now().Day() - 1
+	days := domain.GetDaysOfMonth(prevmonth.String())
+
+	from := time.Now().Add(-(time.Duration(days) * (24 * time.Hour)))
+	to := time.Now().Add(-((24 * time.Hour) - time.Duration(delta)))
+
+	tr := domain.TimeRange{
+		From: from.Unix(),
+		To:   to.Unix(),
+	}
+	reports, err := s.repository.GetReportsFromRange(ctx, tr)
+
+	if err != nil {
+		return err
+	}
+
+	arch := domain.FormatArchive(tr, reports)
+
+	if err := s.repository.InsertArchive(ctx, arch); err != nil {
+		return err
+	}
+
+	return s.repository.DeleteReports(ctx, tr)
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"webservice/internal/domain"
 	"webservice/pkg/database"
@@ -18,6 +19,10 @@ type Repository interface {
 	GetReports(context.Context, int64) ([]domain.Report, error)
 	GetReportsFromRange(context.Context, domain.TimeRange) ([]domain.Report, error)
 	InsertReport(context.Context, domain.Report) error
+	DeleteReports(ctx context.Context, rge domain.TimeRange) error
+
+	InsertArchive(ctx context.Context, archive domain.Archive) error
+	GetArchive(ctx context.Context, ref string) (domain.Archive, error)
 }
 
 type reportsRepo struct {
@@ -112,7 +117,7 @@ func (r *reportsRepo) InsertArchive(ctx context.Context, archive domain.Archive)
 	return database.Write(ctx, r.dbname, archiveCollection, archive)
 }
 
-func (r *reportsRepo) Delete(ctx context.Context, rge domain.TimeRange) error {
+func (r *reportsRepo) DeleteReports(ctx context.Context, rge domain.TimeRange) error {
 
 	client, err := database.ConnectDB(r.dbHost, r.dbPort)
 	if err != nil {
@@ -127,4 +132,30 @@ func (r *reportsRepo) Delete(ctx context.Context, rge domain.TimeRange) error {
 	}
 
 	return nil
+}
+
+func (r *reportsRepo) GetArchive(ctx context.Context, ref string) (domain.Archive, error) {
+	client, err := database.ConnectDB(r.dbHost, r.dbPort)
+
+	if err != nil {
+		return domain.Archive{}, err
+	}
+
+	coll := client.Database(r.dbname).Collection(archiveCollection)
+
+	filter := bson.M{"ref": ref}
+
+	res := coll.FindOne(ctx, filter)
+	if res == nil {
+		return domain.Archive{}, domain.ErrNotFound{
+			Msg: fmt.Sprintf("archive with ref. %s not found", ref),
+		}
+	}
+
+	var arch domain.Archive
+	if err := res.Decode(&arch); err != nil {
+		return domain.Archive{}, err
+	}
+
+	return arch, nil
 }

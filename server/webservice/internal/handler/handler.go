@@ -83,7 +83,7 @@ func (s *serviceHandler) GetReportsByDate(w http.ResponseWriter, r *http.Request
 		}
 		t := time.Date(ints[0], time.Month(ints[1]), ints[2], 0, 0, 0, 0, time.UTC).Unix()
 		trge.From = t
-		trge.To = t + domain.TW4
+		trge.To = t + domain.TWENTY_FOUR
 	}
 	reports, err := s.repository.GetReportsFromRange(r.Context(), trge)
 
