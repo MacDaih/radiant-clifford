@@ -10,8 +10,8 @@ import (
 	"webservice/internal/handler"
 	"webservice/internal/repository"
 
-	httpserver "webservice/pkg/http_server"
-	tcpclient "webservice/pkg/tcp_client"
+	"webservice/cmd/server"
+	"webservice/cmd/worker"
 )
 
 func main() {
@@ -26,25 +26,16 @@ func main() {
 	dbport := os.Getenv("DB_PORT")
 
 	repo := repository.NewReportRepository(dbName, dbhost, dbport)
-
-	hdlr := handler.NewServiceHandler(repo)
 	cltr := collector.NewCollector(repo)
+	hdlr := handler.NewServiceHandler(repo)
 
 	httpError := make(chan error)
 	collError := make(chan error)
 	sysInt := make(chan os.Signal, 2)
 
-	routes := []httpserver.Route{
-		{
-			Path:   "/reports",
-			Fn:     hdlr.ReportsHandler,
-			Method: "GET",
-		},
-	}
+	go server.RunWebservice(port, hdlr, httpError)
 
-	go httpserver.HttpServe(port, routes, httpError)
-
-	go tcpclient.RunTCPCLient(socket, key, cltr.ReadSock, collError)
+	go worker.Process(socket, key, cltr, collError)
 
 	signal.Notify(sysInt, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 

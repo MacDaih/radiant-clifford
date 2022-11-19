@@ -44,6 +44,6 @@ func (s *serviceCollector) ReadSock(conn net.Conn) error {
 		return err
 	}
 
-	r.RptAt = time.Now().Unix()
+	r.ReportedAt = time.Now().Unix()
 	return s.repository.InsertReport(context.Background(), r)
 }

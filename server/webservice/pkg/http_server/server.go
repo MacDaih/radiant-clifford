@@ -13,7 +13,7 @@ type Route struct {
 	Method string
 }
 
-func HttpServe(port string, routes []Route, e chan error) {
+func HttpServe(port string, routes []Route) error {
 	log.Println("Running HTTP Server")
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -23,5 +23,5 @@ func HttpServe(port string, routes []Route, e chan error) {
 
 	router.Handle("/", router)
 
-	e <- http.ListenAndServe(port, router)
+	return http.ListenAndServe(port, router)
 }

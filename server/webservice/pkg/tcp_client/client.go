@@ -8,18 +8,20 @@ import (
 
 type readerFunc func(net.Conn) error
 
-func RunTCPCLient(socket string, key string, r readerFunc, e chan error) {
+func RunTCPCLient(socket string, key string, r readerFunc) error {
 	log.Println("Running Collector")
+
 	addr, err := net.ResolveTCPAddr("tcp4", socket)
 	if err != nil {
 		log.Printf("resolving address error : %s\n", err.Error())
-		e <- err
+		return err
 	}
+
 	conn, err := net.DialTCP("tcp", nil, addr)
 
 	if err != nil {
 		log.Printf("dial to address error : %s\n", err.Error())
-		e <- err
+		return err
 	}
 
 	defer conn.Close()

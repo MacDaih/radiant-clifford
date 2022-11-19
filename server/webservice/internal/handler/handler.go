@@ -3,15 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"log"
-	"math"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
-	d "webservice/internal/domain"
+	"webservice/internal/domain"
 	"webservice/internal/repository"
-)
 
-const (
-	DAY = 86200
+	"github.com/gorilla/mux"
 )
 
 // For dev purpose only
@@ -24,7 +23,8 @@ type serviceHandler struct {
 }
 
 type Handler interface {
-	ReportsHandler(w http.ResponseWriter, r *http.Request)
+	GetReportsFrom(w http.ResponseWriter, r *http.Request)
+	GetReportsByDate(w http.ResponseWriter, r *http.Request)
 }
 
 func NewServiceHandler(repository repository.Repository) Handler {
@@ -33,65 +33,63 @@ func NewServiceHandler(repository repository.Repository) Handler {
 	}
 }
 
-func (s *serviceHandler) ReportsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *serviceHandler) GetReportsFrom(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	t := time.Now().Unix()
-	last := t - DAY
+
+	params := mux.Vars(r)
+
+	var rge int64
+	if v, ok := params["range"]; !ok {
+		log.Println("report handler err : called for reports with no time range")
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		rge = domain.ToStamp(v)
+	}
+
+	last := t - rge
 	reports, err := s.repository.GetReports(r.Context(), last)
+
 	if err != nil {
 		log.Println("report handler err : ", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
-	sample := formatSample(reports)
+
+	sample := domain.FormatSample(reports)
 	json.NewEncoder(w).Encode(sample)
 }
 
-func formatSample(reports []d.Report) d.ReportSample {
-	if len(reports) > 0 {
-		var o d.Overview
-		var maxTemp float64 = reports[0].Temp
-		var minTemp float64 = reports[0].Temp
-		var maxHum float64 = reports[0].Hum
-		var minHum float64 = reports[0].Hum
-		for _, j := range reports {
-			if maxTemp < j.Temp {
-				maxTemp = j.Temp
-			}
-			if minTemp > j.Temp {
-				minTemp = j.Temp
-			}
-			if maxHum < j.Hum {
-				maxHum = j.Temp
-			}
-			if minHum > j.Hum {
-				minHum = j.Hum
-			}
-		}
-		avHum, avTemp := average(reports)
-		o = d.Overview{
-			TempAverage: avTemp,
-			HumAverage:  avHum,
-			MaxTemp:     maxTemp,
-			MinTemp:     minTemp,
-			MaxHum:      maxHum,
-			MinHum:      minHum,
-		}
-		return d.ReportSample{
-			Metrics: o,
-			Reports: reports,
-		}
-	}
-	return d.ReportSample{}
-}
+func (s *serviceHandler) GetReportsByDate(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 
-func average(r []d.Report) (float64, float64) {
-	hum := 0.0
-	temp := 0.0
-	for _, j := range r {
-		hum += j.Hum
-		temp += j.Temp
+	params := mux.Vars(r)
+	var trge domain.TimeRange
+	if v, ok := params["date"]; !ok {
+		log.Println("report handler err : called for reports with no date")
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		p := strings.Split(v, "-")
+		if len(p) != 3 {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+		var ints []int
+		for _, i := range p {
+			res, err := strconv.Atoi(i)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+			ints = append(ints, res)
+		}
+		t := time.Date(ints[0], time.Month(ints[1]), ints[2], 0, 0, 0, 0, time.UTC).Unix()
+		trge.From = t
+		trge.To = t + domain.TW4
 	}
-	hum = math.Round((hum/float64(len(r)))*100) / 100
-	temp = math.Round((temp/float64(len(r)))*100) / 100
-	return hum, temp
+	reports, err := s.repository.GetReportsFromRange(r.Context(), trge)
+
+	if err != nil {
+		log.Println("failed fetching reports", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(reports)
 }

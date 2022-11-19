@@ -59,30 +59,3 @@ func Write(ctx context.Context, dbName string, collName string, args interface{}
 
 	return err
 }
-
-// func ReadMany(ctx context.Context, dbName string, collName string, args interface{}) ([]interface{}, error) {
-// 	client, err :=
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	coll := client.Database(dbName).Collection(collName)
-
-// 	res, err := coll.Find(ctx, args)
-// 	if err != nil {
-// 		log.Println("coll err : ", err)
-// 		return nil, err
-// 	}
-
-// 	var i []interface{}
-// 	for res.Next(ctx) {
-// 		i = append(i, res.)
-// 	}
-
-// 	defer func() {
-// 		client.Disconnect(ctx)
-// 	}()
-
-// 	return i, err
-// }
