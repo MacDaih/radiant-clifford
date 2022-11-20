@@ -51,5 +51,5 @@ func GetSensorKey() string {
 }
 
 func GetDBEnv() (string, string, string) {
-	return cfg.dbHost, cfg.dbName, cfg.dbPort
+	return cfg.dbName, cfg.dbHost, cfg.dbPort
 }

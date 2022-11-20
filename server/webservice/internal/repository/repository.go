@@ -146,7 +146,8 @@ func (r *reportsRepo) GetArchive(ctx context.Context, ref string) (domain.Archiv
 	filter := bson.M{"ref": ref}
 
 	res := coll.FindOne(ctx, filter)
-	if res == nil {
+
+	if res.Err() != nil {
 		return domain.Archive{}, domain.ErrNotFound{
 			Msg: fmt.Sprintf("archive with ref. %s not found", ref),
 		}

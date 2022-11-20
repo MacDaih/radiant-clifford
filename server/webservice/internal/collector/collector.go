@@ -88,6 +88,10 @@ proceed:
 		return err
 	}
 
+	if len(reports) == 0 {
+		return nil
+	}
+
 	arch := domain.FormatArchive(tr, reports)
 
 	if err := s.repository.InsertArchive(ctx, arch); err != nil {
