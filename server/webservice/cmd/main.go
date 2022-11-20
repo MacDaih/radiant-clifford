@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"webservice/config"
 	"webservice/internal/collector"
 	"webservice/internal/handler"
 	"webservice/internal/repository"
@@ -15,17 +16,12 @@ import (
 )
 
 func main() {
+
+	config.Boot()
+
 	log.Println("Starting webservice")
 
-	port := os.Getenv("PORT")
-	socket := os.Getenv("SENSOR_PORT")
-	key := os.Getenv("KEY")
-
-	dbName := os.Getenv("DB_NAME")
-	dbhost := os.Getenv("DB_HOST")
-	dbport := os.Getenv("DB_PORT")
-
-	repo := repository.NewReportRepository(dbName, dbhost, dbport)
+	repo := repository.NewReportRepository(config.GetDBEnv())
 	cltr := collector.NewCollector(repo)
 	hdlr := handler.NewServiceHandler(repo)
 
@@ -33,9 +29,9 @@ func main() {
 	collError := make(chan error)
 	sysInt := make(chan os.Signal, 2)
 
-	go server.RunWebservice(port, hdlr, httpError)
+	go server.RunWebservice(config.GetPort(), hdlr, httpError)
 
-	go worker.Process(socket, key, cltr, collError)
+	go worker.Process(config.GetSocket(), config.GetSensorKey(), cltr, collError)
 
 	signal.Notify(sysInt, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
