@@ -17,9 +17,5 @@ func RunWebservice(port string, service handler.Handler, err chan error) {
 	router.HandleFunc("/reports/{range}", service.GetReportsFrom).Methods("GET")
 	router.HandleFunc("/by_date/{date}", service.GetReportsByDate).Methods("GET")
 
-	router.Handle("/", router)
-
-	router.Handle("", router.NotFoundHandler)
-
 	err <- http.ListenAndServe(port, router)
 }
