@@ -1,24 +1,25 @@
 package server
 
 import (
+	"log"
+	"net/http"
 	"webservice/internal/handler"
-	httpserver "webservice/pkg/http_server"
+
+	"github.com/gorilla/mux"
 )
 
 func RunWebservice(port string, service handler.Handler, err chan error) {
 
-	routes := []httpserver.Route{
-		{
-			Path:   "/reports/{range}",
-			Fn:     service.GetReportsFrom,
-			Method: "GET",
-		},
-		{
-			Path:   "/by_date/{date}",
-			Fn:     service.GetReportsByDate,
-			Method: "GET",
-		},
-	}
+	log.Println("Running HTTP Server")
 
-	err <- httpserver.HttpServe(port, routes)
+	router := mux.NewRouter()
+
+	router.HandleFunc("/reports/{range}", service.GetReportsFrom).Methods("GET")
+	router.HandleFunc("/by_date/{date}", service.GetReportsByDate).Methods("GET")
+
+	router.Handle("/", router)
+
+	router.Handle("", router.NotFoundHandler)
+
+	err <- http.ListenAndServe(port, router)
 }
