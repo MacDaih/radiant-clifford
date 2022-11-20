@@ -10,12 +10,12 @@ const (
 	THIRTY      = 1800
 	FIFHTEEN    = 900
 
-	STR_TWENTY_FOUR = "last_TWENTY_FOUR"
-	STR_TWELVE      = "last_TWELVEve"
+	STR_TWENTY_FOUR = "last_day"
+	STR_TWELVE      = "last_twelve_hours"
 	STR_SIX         = "last_six_hrs"
-	STR_HOUR        = "last_hr"
-	STR_THIRTY      = "last_THIRTY"
-	STR_FIFHTEEN    = "last_FIFHTEEN"
+	STR_HOUR        = "last_hour"
+	STR_THIRTY      = "last_thirthy_minutes"
+	STR_FIFHTEEN    = "last_fifthteen_minutes"
 )
 
 func ToStamp(input string) int64 {

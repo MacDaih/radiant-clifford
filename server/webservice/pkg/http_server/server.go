@@ -18,7 +18,8 @@ func HttpServe(port string, routes []Route) error {
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, r := range routes {
-		router.HandleFunc(r.Path, r.Fn).Methods(r.Method)
+		tmp := r
+		router.HandleFunc(tmp.Path, tmp.Fn).Methods(tmp.Method)
 	}
 
 	router.Handle("/", router)
