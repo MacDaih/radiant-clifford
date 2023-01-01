@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"webservice/config"
 	"webservice/internal/collector"
@@ -13,6 +16,8 @@ import (
 
 	"webservice/cmd/server"
 	"webservice/cmd/worker"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -29,7 +34,17 @@ func main() {
 	collError := make(chan error)
 	sysInt := make(chan os.Signal, 2)
 
-	go server.RunWebservice(config.GetPort(), hdlr, httpError)
+	router := mux.NewRouter()
+
+	router.HandleFunc("/reports/{range}", hdlr.GetReportsFrom).Methods("GET")
+	router.HandleFunc("/by_date/{date}", hdlr.GetReportsByDate).Methods("GET")
+
+	webservice := http.Server{
+		Addr:    config.GetPort(),
+		Handler: router,
+	}
+
+	go server.RunWebservice(&webservice, httpError)
 
 	go worker.Process(config.GetSocket(), config.GetSensorKey(), cltr, collError)
 
@@ -42,6 +57,18 @@ func main() {
 		log.Fatalf("data collector error : %s", err)
 	case <-sysInt:
 		log.Println("interrupt : webservice is shutting down")
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+
+		defer cancel()
+
+		if err := webservice.Shutdown(ctx); err != nil {
+			log.Printf("error when shutting down server : %s", err)
+			log.Println("closing webservice ...")
+			webservice.Close()
+
+		}
+
 		return
 	}
 }

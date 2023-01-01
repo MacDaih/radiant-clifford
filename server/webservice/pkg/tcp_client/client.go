@@ -33,6 +33,6 @@ func RunTCPCLient(socket string, key string, r readerFunc) error {
 			continue
 		}
 		r(conn)
-		<-time.After(time.Second * 10)
+		time.Sleep(time.Second * 10)
 	}
 }
