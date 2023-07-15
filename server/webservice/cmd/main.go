@@ -32,7 +32,7 @@ func main() {
 
 	httpError := make(chan error)
 	collError := make(chan error)
-	sysInt := make(chan os.Signal, 2)
+	sysInt := make(chan os.Signal)
 
 	router := mux.NewRouter()
 
@@ -66,7 +66,6 @@ func main() {
 			log.Printf("error when shutting down server : %s", err)
 			log.Println("closing webservice ...")
 			webservice.Close()
-
 		}
 
 		return
