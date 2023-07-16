@@ -46,6 +46,7 @@ func main() {
 
 	go server.RunWebservice(&webservice, httpError)
 
+	log.Printf("TEST %s\n", config.GetSocket())
 	go worker.Process(config.GetSocket(), config.GetSensorKey(), cltr, collError)
 
 	signal.Notify(sysInt, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)

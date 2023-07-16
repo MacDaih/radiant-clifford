@@ -3,4 +3,5 @@
 /embedded/daemon/dev.log
 /embedded/webservice/dev.log
 
-.env
+.env*
+

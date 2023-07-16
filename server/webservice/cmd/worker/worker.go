@@ -33,7 +33,7 @@ func retry(attempts int, fn func() error) error {
 		if err == nil {
 			return nil
 		} else {
-			time.Sleep(10 * time.Minute)
+			time.Sleep(30 * time.Second)
 		}
 	}
 

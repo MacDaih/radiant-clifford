@@ -18,7 +18,7 @@ services:
     container_name: clifford-ws
     build: ./webservice
     env_file:
-      - .env.local
+      - .env
     depends_on:
       - radiant_db
     restart: always
