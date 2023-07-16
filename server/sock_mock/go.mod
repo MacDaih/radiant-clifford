@@ -1,3 +1,3 @@
 module sock_mock
 
-go 1.17
+go 1.20

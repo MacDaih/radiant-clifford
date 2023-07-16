@@ -12,6 +12,7 @@ services:
       - "9090:9090"
     networks:
       - clifford
+
   webservice:
     image: ws
     container_name: clifford-ws
@@ -26,6 +27,7 @@ services:
     expose: [8080]
     networks:
       - clifford
+
   radiant_db:
     image: "mongo:4.0"
     container_name: radiant-db
@@ -43,6 +45,7 @@ services:
       - data:/data/db
     networks:
       - clifford
+
 networks:
   clifford:
     driver: "bridge"
