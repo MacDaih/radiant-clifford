@@ -43,6 +43,7 @@ func (s *serviceHandler) GetReportsFrom(w http.ResponseWriter, r *http.Request) 
 	if v, ok := params["range"]; !ok {
 		log.Println("report handler err : called for reports with no time range")
 		w.WriteHeader(http.StatusBadRequest)
+        return
 	} else {
 		rge = domain.ToStamp(v)
 	}
@@ -53,6 +54,7 @@ func (s *serviceHandler) GetReportsFrom(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Println("report handler err : ", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
+        return
 	}
 
 	sample := domain.FormatSample(reports)
@@ -67,6 +69,7 @@ func (s *serviceHandler) GetReportsByDate(w http.ResponseWriter, r *http.Request
 	if v, ok := params["date"]; !ok {
 		log.Println("report handler err : called for reports with no date")
 		w.WriteHeader(http.StatusBadRequest)
+        return
 	} else {
 		p := strings.Split(v, "-")
 		if len(p) != 3 {

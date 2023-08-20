@@ -8,7 +8,7 @@ import (
 	tcpclient "webservice/pkg/tcp_client"
 )
 
-func Process(socket, key string, collector collector.Collector, err chan error) {
+func Process(socket, key string, collector collector.Collector, we chan error) {
 	go func() {
 		for {
 			if time.Now().Day() >= 1 {
@@ -20,7 +20,7 @@ func Process(socket, key string, collector collector.Collector, err chan error) 
 		}
 	}()
 
-	err <- retry(10, func() error {
+	we <- retry(10, func() error {
 		return tcpclient.RunTCPCLient(socket, key, collector.ReadSock)
 	})
 }

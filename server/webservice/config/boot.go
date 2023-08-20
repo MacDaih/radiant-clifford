@@ -8,8 +8,8 @@ import (
 type config struct {
 	port string // PORT
 
-	socket    string //SENSOR_PORT
-	sensorKey string //KEY
+	sensorPort string //SENSOR_PORT
+	sensorKey  string //KEY
 
 	dbName string // DB_NAME
 	dbHost string // DB_HOST
@@ -29,7 +29,7 @@ func set(key string) string {
 func Boot() {
 	cfg.port = set("PORT")
 
-	cfg.socket = set("SENSOR_PORT")
+	cfg.sensorPort = set("SENSOR_PORT")
 
 	cfg.sensorKey = set("KEY")
 
@@ -42,8 +42,8 @@ func GetPort() string {
 	return cfg.port
 }
 
-func GetSocket() string {
-	return cfg.socket
+func GetSensorPort() string {
+	return cfg.sensorPort
 }
 
 func GetSensorKey() string {

@@ -1,7 +1,7 @@
 package tcpclient
 
 import (
-	"log"
+    "log"
 	"net"
 	"time"
 )
@@ -9,7 +9,7 @@ import (
 type readerFunc func(net.Conn) error
 
 func RunTCPCLient(socket string, key string, r readerFunc) error {
-    log.Println("Running Collector target")
+	log.Println("Running Collector target")
 	addr, err := net.ResolveTCPAddr("tcp4", socket)
 	if err != nil {
 		log.Printf("resolving address error : %s\n", err.Error())

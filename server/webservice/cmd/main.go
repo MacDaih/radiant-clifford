@@ -31,7 +31,7 @@ func main() {
 	hdlr := handler.NewServiceHandler(repo)
 
 	httpError := make(chan error)
-	collError := make(chan error)
+	workerErr := make(chan error)
 	sysInt := make(chan os.Signal)
 
 	router := mux.NewRouter()
@@ -46,16 +46,24 @@ func main() {
 
 	go server.RunWebservice(&webservice, httpError)
 
-	log.Printf("TEST %s\n", config.GetSocket())
-	go worker.Process(config.GetSocket(), config.GetSensorKey(), cltr, collError)
+	go worker.Process(
+		config.GetSensorPort(),
+		config.GetSensorKey(),
+		cltr,
+		workerErr,
+	)
 
 	signal.Notify(sysInt, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	select {
 	case err := <-httpError:
-		log.Fatalf("http Server error : %s", err)
-	case err := <-collError:
-		log.Fatalf("data collector error : %s", err)
+		if err != nil {
+			log.Fatalf("http Server error : %s", err.Error())
+		}
+	case err := <-workerErr:
+		if err != nil {
+			log.Fatalf("data collector error : %s", err.Error())
+		}
 	case <-sysInt:
 		log.Println("interrupt : webservice is shutting down")
 
